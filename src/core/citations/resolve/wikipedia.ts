@@ -46,11 +46,16 @@ export function extractAnchorsFromHtml(
         return false;
       }
     });
+    const matched = scope !== null;
+    const found: string[] = [];
     (scope ?? $("body"))
       .find('sup a[href^="#cite_note"]')
       .each((_, a) => {
-        noteIds.push(($(a).attr("href") ?? "").replace(/^#/, ""));
+        found.push(($(a).attr("href") ?? "").replace(/^#/, ""));
       });
+    // Unmatched statement degrades to the same capped fallback as the
+    // no-statement branch below, instead of scanning the whole body uncapped.
+    noteIds.push(...(matched ? found : found.slice(0, MAX_PAGE_REFS)));
   } else {
     $("ol.references > li").each((_, li) => {
       const id = $(li).attr("id");
@@ -98,10 +103,14 @@ const DEFAULTS: WikiDeps = {
 async function resolveIdentifier(
   idf: WikiIdentifier, opts: OpenAlexOpts, d: WikiDeps,
 ): Promise<WorkId | null> {
-  if (idf.kind === "doi") return (await d.getWorkByDoi(idf.value, opts))?.node.id ?? null;
-  if (idf.kind === "pmid") return (await d.getWorkByPmid(idf.value, opts))?.node.id ?? null;
-  const hits = await d.searchWorks(idf.value, 1, opts);
-  return hits[0]?.node.id ?? null;
+  try {
+    if (idf.kind === "doi") return (await d.getWorkByDoi(idf.value, opts))?.node.id ?? null;
+    if (idf.kind === "pmid") return (await d.getWorkByPmid(idf.value, opts))?.node.id ?? null;
+    const hits = await d.searchWorks(idf.value, 1, opts);
+    return hits[0]?.node.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveWikipedia(

@@ -29,6 +29,11 @@ describe("extractAnchorsFromHtml", () => {
     const out = extractAnchorsFromHtml(WIKI_HTML);
     expect(out.map((o) => o.kind)).toEqual(["doi", "url"]);
   });
+
+  it("degrades gracefully (capped) when the statement matches nothing", () => {
+    const out = extractAnchorsFromHtml(WIKI_HTML, "totally-absent-statement");
+    expect(out.map((o) => o.kind)).toEqual(["doi", "url"]);
+  });
 });
 
 describe("resolveWikipedia", () => {
@@ -52,5 +57,18 @@ describe("resolveWikipedia", () => {
     };
     await expect(resolveWikipedia("https://en.wikipedia.org/wiki/Gum", "seven years", vi.fn(), {}, deps))
       .rejects.toThrow();
+  });
+
+  it("recovers when one identifier's resolution rejects, keeping already-resolved anchors", async () => {
+    const deps = {
+      fetchHtml: vi.fn().mockResolvedValue(WIKI_HTML),
+      getWorkByDoi: vi.fn().mockResolvedValue(fw("W100")),
+      searchWorks: vi.fn().mockRejectedValue(new Error("network")),
+    };
+    const { anchors, errors } = await resolveWikipedia(
+      "https://en.wikipedia.org/wiki/Gum", undefined, vi.fn(), {}, deps,
+    );
+    expect(anchors).toEqual(["W100"]);
+    expect(errors).toHaveLength(1);
   });
 });
