@@ -99,7 +99,14 @@ export function CitationGraph({
                     };
                 }
                 if (!hovered) return data;
-                if (node === hovered || neighbours.has(node)) {
+                if (node === hovered) {
+                    return {
+                        ...data,
+                        label: (data.title as string) ?? data.label,
+                        zIndex: 1,
+                    };
+                }
+                if (neighbours.has(node)) {
                     return { ...data, zIndex: 1 };
                 }
                 return {
