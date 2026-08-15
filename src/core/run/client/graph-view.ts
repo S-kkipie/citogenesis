@@ -41,6 +41,10 @@ function shapeOf(node: CitationNode): NodeShape {
     return "dashed";
 }
 
+function isFragileOrigin(node: CitationNode): boolean {
+    return node.isRetracted || node.type === "preprint";
+}
+
 function severityOf(
     node: CitationNode,
     inCycle: boolean,
@@ -48,25 +52,30 @@ function severityOf(
     isOrigin: boolean,
     verdictPathogens: Pathogen[],
 ): NodeSeverity {
+    // flagged (most severe) — all branches return "flagged", so their order is irrelevant
     if (inCycle) return "flagged";
-    if (
-        drift &&
-        (drift.label === "drifted" || drift.label === "contradicted")
-    ) {
+    if (drift && (drift.label === "drifted" || drift.label === "contradicted"))
         return "flagged";
-    }
     if (node.isRetracted) return "flagged";
+    if (
+        isOrigin &&
+        isFragileOrigin(node) &&
+        verdictPathogens.includes("single-point-of-failure")
+    ) {
+        return "flagged"; // the fragile funnel root
+    }
+    // caution
     if (drift && drift.label === "partially-supported") return "caution";
     if (node.fetchStatus === "unresolved") return "caution";
     if (isOrigin && verdictPathogens.includes("no-primary-source"))
         return "caution";
-    if (isOrigin && verdictPathogens.includes("single-point-of-failure"))
-        return "flagged";
+    // healthy / neutral
     if (isOrigin && node.primacy?.label === "primary") return "healthy";
     return "neutral";
 }
 
 function pathogensOf(
+    node: CitationNode,
     inCycle: boolean,
     drift: DriftFinding | undefined,
     isOrigin: boolean,
@@ -75,7 +84,11 @@ function pathogensOf(
     const out: Pathogen[] = [];
     if (inCycle) out.push("circular-support");
     if (drift && drift.label !== "supported") out.push("claim-drift");
-    if (isOrigin && verdictPathogens.includes("single-point-of-failure")) {
+    if (
+        isOrigin &&
+        isFragileOrigin(node) &&
+        verdictPathogens.includes("single-point-of-failure")
+    ) {
         out.push("single-point-of-failure");
     }
     if (isOrigin && verdictPathogens.includes("no-primary-source")) {
@@ -121,7 +134,13 @@ export function deriveGraphView(state: RunState): GraphView {
             isOrigin,
             inCycle,
             drift,
-            pathogens: pathogensOf(inCycle, drift, isOrigin, verdictPathogens),
+            pathogens: pathogensOf(
+                node,
+                inCycle,
+                drift,
+                isOrigin,
+                verdictPathogens,
+            ),
         };
     });
 

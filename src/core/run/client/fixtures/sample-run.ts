@@ -1,6 +1,6 @@
 import type { RunRecord, RunState } from "@/core/run/domain";
 
-const node = (
+export const node = (
     id: string,
     depth: number,
     over: Partial<RunState["graph"]["nodes"][number]> = {},
@@ -46,20 +46,28 @@ export const sampleState: RunState = {
                 title: "Clean primary origin",
                 primacy: { label: "primary", method: "heuristic" },
             }),
+            node("W7", 2, {
+                title: "Clean primary origin",
+                type: "article",
+                primacy: { label: "primary", method: "heuristic" },
+            }),
             node("W6", 2, { title: "Cycle member" }),
+            node("W8", 2, { title: "Drifted secondary" }),
         ],
         edges: [
             { from: "W1", to: "W2" },
             { from: "W1", to: "W3" },
             { from: "W2", to: "W4" },
             { from: "W2", to: "W5" },
+            { from: "W2", to: "W7" },
+            { from: "W2", to: "W8" },
             { from: "W2", to: "W6" },
             { from: "W6", to: "W2" }, // closes the cycle W2->W6->W2
         ],
         truncated: true,
     },
     cycles: [["W2", "W6"]],
-    originCandidates: ["W4", "W5"],
+    originCandidates: ["W4", "W5", "W7"],
     driftFindings: [
         {
             workId: "W4",
@@ -75,6 +83,13 @@ export const sampleState: RunState = {
             basis: "fulltext",
             evidenceQuote: "a modest association was observed",
             explanation: "Caveats dropped downstream.",
+        },
+        {
+            workId: "W8",
+            label: "drifted",
+            basis: "fulltext",
+            evidenceQuote: "results were preliminary",
+            explanation: "Scope inflated downstream.",
         },
     ],
     verdict: {
