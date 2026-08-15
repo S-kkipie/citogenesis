@@ -12,10 +12,25 @@ Track: **Citation Verification**
 - **Sample result permalink:** https://citogenesis.vercel.app/runs/sample-run
 - **Tech tags:** LangGraph (allowed platform tag), TypeScript, Next.js, Gemini, OpenAlex, Postgres
 - **Team:** Adrian Issac (solo)
-- **Demo video (3 min):** ⚠️ PENDING — record `/audit` running the chocolate
-  claim live (graph growing + agent rail), then `/runs` history + a replay
-  permalink. Suggested beats: problem (xkcd citogenesis, 20s) → live run
-  (90s) → verdict card + drift evidence (30s) → history/dedupe + replay (30s).
+- **Demo video (3 min):** ⚠️ PENDING — must be **YouTube (Unlisted) or
+  Loom** per the rules, "showing the agents working together on a real
+  input". Record `/audit` running a claim live (graph growing + agent
+  rail), then `/runs` history + a replay permalink. Suggested beats:
+  problem (xkcd citogenesis, 20s) → live run (90s) → verdict card + drift
+  evidence (30s) → history/dedupe + replay + a failure case (30s).
+
+## Confirmed rules (read off the DoraHacks page, 15 Aug)
+
+- **Submission deadline: 17 August 2026, 11:59 PM IST.** Judging 18–20 Aug,
+  results 21 Aug. (Header shows a contradictory 8 Aug close — body timeline
+  is authoritative per the page's own corrections note.)
+- Submit requires DoraHacks login → "Submit BUIDL" on the hackathon page.
+- Summary ≤200 words must cover: problem, agent architecture, evidence/data
+  sources, expected impact (draft below covers all four).
+- Judges may look for: architecture diagram, agent execution trace, evidence
+  citations, cost table, failure-case demo — we have the trace (permalinks),
+  cost table (README), and can show a failed run; the README's door diagram
+  + agent table serve as architecture.
 
 ## Summary (≤200 words — currently ~175)
 
@@ -38,8 +53,9 @@ real time as the tracer walks it. Every run persists with its full audit
 trace at a shareable permalink; identical inputs reuse the finished run at
 zero cost.
 
-A typical audit costs under $0.01 and takes about 90 seconds. Live at
-citogenesis.vercel.app.
+A typical audit costs under $0.01 and takes about 90 seconds — turning a
+day of manual reference-chasing into a minute-long, auditable check for
+reviewers, editors, and journalists. Live at citogenesis.vercel.app.
 
 ## Reproducibility (for the form, condensed)
 
