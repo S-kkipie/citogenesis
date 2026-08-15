@@ -2,40 +2,22 @@
 
 import { createNodeBorderProgram } from "@sigma/node-border";
 import Graph from "graphology";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Sigma from "sigma";
-import type { GraphView, NodeSeverity } from "@/core/run/client/graph-view";
-import { radialLayout } from "../_lib/radial-layout";
+import type { GraphView } from "@/core/run/client/graph-view";
+import { syncGraph } from "../_lib/graph-sync";
 
 /**
  * WebGL citation graph (Sigma v3 over graphology).
  *
- * The visual language is carried by node attributes rather than by React
- * components: fill = severity, border = primacy, size = in-degree, and the
- * label is only written for nodes worth naming. Positions come from
- * `radialLayout` — Sigma renders, it does not lay out.
+ * The renderer and its graphology instance live for the whole mount; view
+ * changes are synced into the existing instance (graph-sync.ts) so a live
+ * run can stream nodes in without killing the camera or the WebGL context.
  */
-
-const SEVERITY_COLOR: Record<NodeSeverity, string> = {
-    flagged: "#CF222E",
-    caution: "#9A6700",
-    healthy: "#1A7F37",
-    neutral: "#8C959F",
-};
 
 const CANVAS_INK = "#1F2328";
 const EDGE_PLAIN = "#D0D7DE";
-const EDGE_SUPPORT = "#57606A";
-const EDGE_CYCLE = "#CF222E";
 const DIMMED = "#EAEEF2";
-
-/** Full paper titles run long enough to cover the canvas. */
-const LABEL_MAX = 46;
-const truncate = (title: string) =>
-    title.length > LABEL_MAX ? `${title.slice(0, LABEL_MAX - 1)}…` : title;
-
-const MIN_SIZE = 3;
-const MAX_SIZE = 16;
 
 /** Solid disc for primary sources, hollow ring for secondary/unresolved. */
 const NodeProgram = createNodeBorderProgram({
@@ -45,11 +27,15 @@ const NodeProgram = createNodeBorderProgram({
     ],
 });
 
+const CASCADE_FIRST_MS = 220;
+const CASCADE_STEP_MS = 420;
+
 export function CitationGraph({
     view,
     onNodeClick,
     selectedId = null,
     insetRight = 0,
+    cascade = false,
 }: {
     view: GraphView;
     onNodeClick?: (id: string | null) => void;
@@ -58,101 +44,32 @@ export function CitationGraph({
     /** Pixels of the pane covered by an overlay, so the graph keeps clear
      * of it: Sigma refits when its container resizes. */
     insetRight?: number;
+    /** Replay mode: reveal the chain one citation ring at a time. Live mode
+     * leaves this false — nodes appear the moment they stream in. */
+    cascade?: boolean;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const rendererRef = useRef<Sigma | null>(null);
+    const graphRef = useRef<Graph | null>(null);
     const clickRef = useRef(onNodeClick);
     clickRef.current = onNodeClick;
     // Read inside the reducers, which are created once with the renderer.
     const selectedRef = useRef(selectedId);
     selectedRef.current = selectedId;
-
-    const graph = useMemo(() => {
-        const g = new Graph({ multi: false, type: "directed" });
-        const placed = radialLayout(view);
-
-        // In-degree stands in for how load-bearing a paper is.
-        const inDegree = new Map<string, number>();
-        for (const ev of view.edges) {
-            inDegree.set(ev.edge.to, (inDegree.get(ev.edge.to) ?? 0) + 1);
-        }
-        const maxIn = Math.max(1, ...inDegree.values());
-
-        for (const nv of view.nodes) {
-            const at = placed.get(nv.node.id);
-            const cited = inDegree.get(nv.node.id) ?? 0;
-            const colour = SEVERITY_COLOR[nv.severity];
-            const solid = nv.shape === "solid";
-            // sqrt so a hub with 10x the citations reads as ~3x the dot.
-            const size =
-                MIN_SIZE +
-                Math.sqrt(cited / maxIn) * (MAX_SIZE - MIN_SIZE) +
-                (nv.isOrigin ? 4 : 0);
-
-            g.addNode(nv.node.id, {
-                x: at?.x ?? 0,
-                y: at?.y ?? 0,
-                size,
-                type: "bordered",
-                color: colour,
-                borderColor: colour,
-                // Hollow centre unless the node holds original data.
-                fillColor: solid ? colour : "#FFFFFF",
-                // Naming all 200 is noise; name the ones the reader needs.
-                label:
-                    nv.isOrigin ||
-                    nv.inCycle ||
-                    nv.severity === "flagged" ||
-                    nv.node.depth === 0 ||
-                    cited >= Math.max(3, maxIn * 0.4)
-                        ? truncate(nv.node.title)
-                        : "",
-                title: nv.node.title,
-                depth: nv.node.depth,
-            });
-        }
-
-        for (const ev of view.edges) {
-            if (!g.hasNode(ev.edge.from) || !g.hasNode(ev.edge.to)) continue;
-            if (g.hasEdge(ev.edge.from, ev.edge.to)) continue;
-            g.addEdgeWithKey(ev.id, ev.edge.from, ev.edge.to, {
-                size:
-                    ev.kind === "cycle"
-                        ? 2.5
-                        : ev.kind === "support-path"
-                          ? 1.6
-                          : 0.6,
-                color:
-                    ev.kind === "cycle"
-                        ? EDGE_CYCLE
-                        : ev.kind === "support-path"
-                          ? EDGE_SUPPORT
-                          : EDGE_PLAIN,
-                kind: ev.kind,
-            });
-        }
-
-        return g;
-    }, [view]);
+    /** Depth ≤ this is visible; Infinity = everything (live mode). */
+    const revealRef = useRef(Number.POSITIVE_INFINITY);
 
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
+        const g = new Graph({ multi: false, type: "directed" });
+        graphRef.current = g;
+
         let hovered: string | null = null;
         let neighbours = new Set<string>();
-        // The chain is revealed one citation ring at a time, so a viewer can
-        // see the trace walk backwards instead of a graph appearing at once.
-        const maxDepth = Math.max(
-            0,
-            ...graph.mapNodes((_, attrs) => (attrs.depth as number) ?? 0),
-        );
-        const reduced = window.matchMedia(
-            "(prefers-reduced-motion: reduce)",
-        ).matches;
-        let revealedDepth = reduced ? maxDepth : 0;
 
-        const renderer = new Sigma(graph, container, {
+        const renderer = new Sigma(g, container, {
             nodeProgramClasses: { bordered: NodeProgram },
             defaultEdgeColor: EDGE_PLAIN,
             labelColor: { color: CANVAS_INK },
@@ -168,7 +85,7 @@ export function CitationGraph({
             // Hovering a paper fades everything it isn't connected to — the
             // only practical way to read one citation path out of hundreds.
             nodeReducer: (node, data) => {
-                if (((data.depth as number) ?? 0) > revealedDepth) {
+                if (((data.depth as number) ?? 0) > revealRef.current) {
                     return { ...data, hidden: true };
                 }
                 const selected = node === selectedRef.current;
@@ -195,12 +112,14 @@ export function CitationGraph({
                 };
             },
             edgeReducer: (edge, data) => {
-                const [from, to] = graph.extremities(edge);
+                const [from, to] = g.extremities(edge);
                 const deepest = Math.max(
-                    (graph.getNodeAttribute(from, "depth") as number) ?? 0,
-                    (graph.getNodeAttribute(to, "depth") as number) ?? 0,
+                    (g.getNodeAttribute(from, "depth") as number) ?? 0,
+                    (g.getNodeAttribute(to, "depth") as number) ?? 0,
                 );
-                if (deepest > revealedDepth) return { ...data, hidden: true };
+                if (deepest > revealRef.current) {
+                    return { ...data, hidden: true };
+                }
                 if (!hovered) return data;
                 const touches = from === hovered || to === hovered;
                 return touches
@@ -211,7 +130,7 @@ export function CitationGraph({
 
         renderer.on("enterNode", ({ node }) => {
             hovered = node;
-            neighbours = new Set(graph.neighbors(node));
+            neighbours = new Set(g.neighbors(node));
             renderer.refresh({ skipIndexation: true });
         });
         renderer.on("leaveNode", () => {
@@ -224,23 +143,52 @@ export function CitationGraph({
         renderer.on("clickStage", () => clickRef.current?.(null));
         rendererRef.current = renderer;
 
-        let timer: number | undefined;
-        if (!reduced && maxDepth > 0) {
-            const step = () => {
-                revealedDepth += 1;
-                renderer.refresh({ skipIndexation: true });
-                if (revealedDepth < maxDepth)
-                    timer = window.setTimeout(step, 420);
-            };
-            timer = window.setTimeout(step, 220);
-        }
-
         return () => {
-            if (timer) window.clearTimeout(timer);
             rendererRef.current = null;
+            graphRef.current = null;
             renderer.kill();
         };
-    }, [graph]);
+    }, []);
+
+    useEffect(() => {
+        const g = graphRef.current;
+        const renderer = rendererRef.current;
+        if (!g || !renderer) return;
+
+        syncGraph(g, view);
+
+        const reduced = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+        ).matches;
+        const maxDepth = view.nodes.reduce(
+            (deepest, nv) => Math.max(deepest, nv.node.depth),
+            0,
+        );
+
+        if (!cascade || reduced || maxDepth === 0) {
+            revealRef.current = Number.POSITIVE_INFINITY;
+            renderer.refresh();
+            return;
+        }
+
+        // Replay: reveal the chain one citation ring at a time, so a viewer
+        // can see the trace walk backwards instead of a graph appearing at
+        // once.
+        revealRef.current = 0;
+        renderer.refresh();
+        let timer: number | undefined;
+        const step = () => {
+            revealRef.current += 1;
+            renderer.refresh({ skipIndexation: true });
+            if (revealRef.current < maxDepth) {
+                timer = window.setTimeout(step, CASCADE_STEP_MS);
+            }
+        };
+        timer = window.setTimeout(step, CASCADE_FIRST_MS);
+        return () => {
+            if (timer) window.clearTimeout(timer);
+        };
+    }, [view, cascade]);
 
     const zoom = (factor: number) =>
         rendererRef.current
