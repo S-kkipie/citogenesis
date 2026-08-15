@@ -42,6 +42,22 @@ describe("resolveInputWith", () => {
         expect(out.claim).toBe("Paper Five");
     });
 
+    it("survives a getWorks rejection for a paper input, falling back to id as claim", async () => {
+        const resolvePaper = vi.fn().mockResolvedValue("W5");
+        const getWorks = vi.fn().mockRejectedValue(new Error("network down"));
+        const out = await resolveInputWith(
+            { kind: "paper", id: "some-doi-id" } as RunInput,
+            vi.fn(),
+            {},
+            { resolvePaper, getWorks },
+        );
+        expect(out.anchors).toEqual(["W5"]);
+        expect(out.claim).toBe("some-doi-id");
+        expect(
+            out.errors.some((e) => e.recovered && e.agent === "input-adapter"),
+        ).toBe(true);
+    });
+
     it("throws when a paper cannot be resolved", async () => {
         const resolvePaper = vi.fn().mockResolvedValue(null);
         await expect(

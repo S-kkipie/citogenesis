@@ -41,7 +41,29 @@ export async function traceChainWith(
     const fetchMeta = async (ids: WorkId[]): Promise<void> => {
         const need = ids.filter((id) => !known.has(id));
         if (need.length === 0) return;
-        const { works, missing } = await fetchWorks(need);
+        let works: Map<WorkId, FetchedWork>;
+        let missing: WorkId[];
+        try {
+            ({ works, missing } = await fetchWorks(need));
+        } catch (err) {
+            works = new Map();
+            missing = need;
+            for (const id of missing) {
+                known.add(id);
+                emit({
+                    agent: "chain-tracer",
+                    phase: "recovery",
+                    summary: `Node ${id} unresolved (fetch error)`,
+                    data: { id },
+                });
+            }
+            errors.push({
+                agent: "chain-tracer",
+                recovered: true,
+                message: `Fetch error for ${missing.length} node(s): ${err instanceof Error ? err.message : String(err)}`,
+            });
+            return;
+        }
         for (const [id, fw] of works) {
             fetched.set(id, fw);
             known.add(id);

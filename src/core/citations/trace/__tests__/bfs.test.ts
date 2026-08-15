@@ -111,6 +111,31 @@ describe("traceChainWith", () => {
         expect(graph.truncated).toBe(true);
     });
 
+    it("recovers when fetchWorks rejects for a batch, keeping partial graph and reporting a recovered error", async () => {
+        const emit = vi.fn();
+        const anchor = fw("W1", ["W2"]);
+        const f = async (ids: WorkId[]) => {
+            if (ids.includes("W1")) {
+                const works = new Map<WorkId, FetchedWork>([["W1", anchor]]);
+                return { works, missing: [] };
+            }
+            throw new Error("network exploded");
+        };
+        const { graph, errors } = await traceChainWith(
+            ["W1"],
+            TRACE_BUDGET,
+            emit,
+            f,
+        );
+        expect(graph.nodes.map((n) => n.id).sort()).toEqual(["W1", "W2"]);
+        // biome-ignore lint/style/noNonNullAssertion: This fixture must produce the unresolved placeholder under test.
+        const un = graph.nodes.find((n) => n.id === "W2")!;
+        expect(un.fetchStatus).toBe("unresolved");
+        expect(
+            errors.some((e) => e.recovered && e.agent === "chain-tracer"),
+        ).toBe(true);
+    });
+
     it("never emits a dangling edge when the node budget is hit mid-parent", async () => {
         const anchor = fw("W1", ["Wb0", "Wb1", "Wb2", "Wb3", "Wb4"]);
         const db: Record<string, FetchedWork> = { W1: anchor };

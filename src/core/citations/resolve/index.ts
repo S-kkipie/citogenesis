@@ -50,8 +50,29 @@ export async function resolveInputWith(
             if (!workId)
                 throw new Error(`Could not resolve paper: ${input.id}`);
             anchors = [workId];
-            const { works } = await d.getWorks([workId], opts);
-            claim = works.get(workId)?.node.title ?? input.id;
+            try {
+                const { works, missing } = await d.getWorks([workId], opts);
+                const title = works.get(workId)?.node.title;
+                if (title && !missing.includes(workId)) {
+                    claim = title;
+                } else {
+                    claim = input.id;
+                    errors.push({
+                        agent: "input-adapter",
+                        recovered: true,
+                        message:
+                            "could not fetch anchor metadata for title; using id",
+                    });
+                }
+            } catch {
+                claim = input.id;
+                errors.push({
+                    agent: "input-adapter",
+                    recovered: true,
+                    message:
+                        "could not fetch anchor metadata for title; using id",
+                });
+            }
             break;
         }
         case "wikipedia": {
