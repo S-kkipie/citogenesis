@@ -32,7 +32,13 @@ export const citationNodeSchema = z.object({
     /** BFS distance from the anchor (0 = anchor itself). */
     depth: z.number().int().min(0),
     source: z.enum(["openalex", "semanticscholar"]),
-    /** `unresolved` = both data sources failed; node kept for coverage stats. */
+    /**
+     * `unresolved` = both data sources failed; node kept for coverage stats.
+     * Convention: unresolved nodes carry placeholders in non-nullable fields
+     * (title "(unresolved)", type "unknown", counts 0, flags false, rest
+     * null). Consumers MUST branch on fetchStatus, never on placeholder
+     * values.
+     */
     fetchStatus: z.enum(["resolved", "unresolved"]),
     primacy: primacySchema.optional(),
 });
