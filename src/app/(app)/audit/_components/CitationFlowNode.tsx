@@ -40,7 +40,7 @@ export function CitationFlowNode({ data }: NodeProps<CitationRFNode>) {
                 ].join(" ")}
                 title={view.pathogens.join(", ") || "clean"}
             />
-            <span className="max-w-[8rem] truncate text-[10px] text-[#1A1F26]">
+            <span className="max-w-[8rem] truncate text-[10px] text-[var(--au-canvas-ink)]">
                 {view.node.title}
             </span>
             <Handle

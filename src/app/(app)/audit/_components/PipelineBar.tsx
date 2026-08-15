@@ -10,11 +10,11 @@ const LABEL: Record<AgentName, string> = {
 };
 
 const COLOR: Record<AgentStatus, string> = {
-    idle: "text-[#57606A]",
-    running: "text-[#1A1F26] font-semibold",
-    done: "text-[#1A7F37]",
-    recovered: "text-[#9A6700]",
-    error: "text-[#CF222E]",
+    idle: "text-[var(--au-neutral)]",
+    running: "text-[var(--au-ink)] font-semibold",
+    done: "text-[var(--au-healthy)]",
+    recovered: "text-[var(--au-caution)]",
+    error: "text-[var(--au-flag)]",
 };
 
 export function PipelineBar({
@@ -23,12 +23,12 @@ export function PipelineBar({
     agents: Record<AgentName, AgentStatus>;
 }) {
     return (
-        <div className="flex items-center gap-1 border-b p-3 text-xs">
+        <div className="flex items-center gap-1 border-[var(--au-rule)] border-b p-3 text-xs">
             {AGENT_ORDER.map((a, i) => (
                 <span key={a} className="flex items-center gap-1">
                     <span className={COLOR[agents[a]]}>{LABEL[a]}</span>
                     {i < AGENT_ORDER.length - 1 && (
-                        <span className="text-[#57606A]">→</span>
+                        <span className="text-[var(--au-neutral)]">→</span>
                     )}
                 </span>
             ))}

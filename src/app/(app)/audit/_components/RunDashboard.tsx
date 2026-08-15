@@ -11,6 +11,7 @@ import {
     type LiveView,
 } from "@/core/run/client/stream";
 import type { AgentName, RunState } from "@/core/run/domain";
+import "../audit.css";
 import { AuditLog } from "./AuditLog";
 import { CitationGraph } from "./CitationGraph";
 import { DriftPanel } from "./DriftPanel";
@@ -66,8 +67,8 @@ export function RunDashboard({
     }, [revealKey, state]);
 
     return (
-        <div className="grid h-[calc(100svh-3.5rem)] grid-cols-[1fr_360px]">
-            <section className="relative border-r">
+        <div className="audit-scope grid h-[calc(100svh-3.5rem)] grid-cols-[1fr_360px] bg-[var(--au-paper)] font-[family-name:var(--font-body)] text-[var(--au-ink)]">
+            <section className="relative border-[var(--au-rule)] border-r bg-[var(--au-canvas)]">
                 {view ? (
                     <>
                         <CitationGraph
@@ -78,13 +79,13 @@ export function RunDashboard({
                         <button
                             type="button"
                             onClick={() => setRevealKey((key) => key + 1)}
-                            className="absolute top-3 left-3 z-10 rounded border border-[#D0D7DE] bg-white/90 px-2 py-1 text-xs text-[#57606A] shadow-sm hover:bg-[#F6F8FA]"
+                            className="absolute top-3 left-3 z-10 rounded border border-[var(--au-canvas-rule)] bg-[var(--au-canvas)]/90 px-2 py-1 text-[var(--au-canvas-ink)] text-xs shadow-sm hover:bg-[var(--au-canvas)]"
                         >
                             Replay
                         </button>
                     </>
                 ) : (
-                    <div className="flex h-full items-center justify-center text-[#57606A]">
+                    <div className="flex h-full items-center justify-center text-[var(--au-canvas-ink)]/60">
                         Enter a claim to begin.
                     </div>
                 )}
@@ -97,7 +98,7 @@ export function RunDashboard({
                 )}
                 <Legend />
             </section>
-            <aside className="flex flex-col overflow-hidden">
+            <aside className="flex flex-col overflow-hidden border-[var(--au-rule)] border-l bg-[var(--au-paper-2)]">
                 <VerdictCard verdict={state?.verdict ?? null} />
                 <PipelineBar agents={displayAgents} />
                 <AuditLog trace={live?.trace ?? state?.trace ?? []} />

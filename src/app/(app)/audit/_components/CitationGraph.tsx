@@ -53,7 +53,7 @@ export function CitationGraph({
     );
 
     return (
-        <div className="h-full w-full">
+        <div className="h-full w-full bg-[var(--au-canvas)]">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -62,7 +62,7 @@ export function CitationGraph({
                 onNodeClick={(_, node) => onNodeClick?.(node.id)}
                 proOptions={{ hideAttribution: true }}
             >
-                <Background color="#E1E4E8" />
+                <Background color="var(--au-canvas-rule)" />
                 <Controls showInteractive={false} />
             </ReactFlow>
         </div>

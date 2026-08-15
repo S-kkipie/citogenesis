@@ -11,7 +11,7 @@ const LABEL: Record<AgentName, string> = {
 
 export function AuditLog({ trace }: { trace: TraceEvent[] }) {
     return (
-        <div className="flex-1 overflow-auto p-3 text-xs">
+        <div className="flex-1 overflow-auto p-3 font-[family-name:var(--font-mono)] text-xs">
             {AGENT_ORDER.map((agent) => {
                 const events = trace.filter((t) => t.agent === agent);
                 if (events.length === 0) {
@@ -20,7 +20,7 @@ export function AuditLog({ trace }: { trace: TraceEvent[] }) {
 
                 return (
                     <div key={agent} className="mb-3">
-                        <p className="font-semibold text-[#1A1F26]">
+                        <p className="font-semibold text-[var(--au-ink)]">
                             {LABEL[agent]}
                         </p>
                         <ul className="mt-1 space-y-0.5">
@@ -29,10 +29,10 @@ export function AuditLog({ trace }: { trace: TraceEvent[] }) {
                                     key={idx}
                                     className={
                                         e.phase === "recovery"
-                                            ? "text-[#9A6700]"
+                                            ? "text-[var(--au-caution)]"
                                             : e.phase === "error"
-                                              ? "text-[#CF222E]"
-                                              : "text-[#57606A]"
+                                              ? "text-[var(--au-flag)]"
+                                              : "text-[var(--au-neutral)]"
                                     }
                                 >
                                     · {e.summary}
