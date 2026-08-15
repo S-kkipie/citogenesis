@@ -1,12 +1,12 @@
 // src/core/citations/__tests__/smoke.live.test.ts
 import { describe, expect, it } from "vitest";
 import { TRACE_BUDGET } from "../../run/domain/graph";
-import { resolveInput, traceChain } from "../index";
 
 const live = process.env.LIVE_OPENALEX === "1" ? describe : describe.skip;
 
 live("live OpenAlex smoke (depth 1)", () => {
     it("resolves a known paper and traces one level", async () => {
+        const { resolveInput, traceChain } = await import("../index");
         const events: unknown[] = [];
         const emit = (e: unknown) => events.push(e);
         const { anchors } = await resolveInput(
