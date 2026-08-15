@@ -12,12 +12,14 @@
  */
 import type { CitationGraph, CitationNode, TraceBudget, WorkId } from "./graph";
 import type { DriftFinding, RunError, RunInput, Verdict } from "./state";
+import type { DeltaEmit } from "./delta";
 import type { TraceEmit } from "./trace";
 
 /** Door A/B/C → normalized claim + BFS roots. */
 export type ResolveInput = (
     input: RunInput,
     emit: TraceEmit,
+    emitDelta?: DeltaEmit,
 ) => Promise<{ claim: string; anchors: WorkId[]; errors: RunError[] }>;
 
 /** BFS backwards via referenced_works, within budget. Detects cycles. */
@@ -25,6 +27,7 @@ export type TraceChain = (
     anchors: WorkId[],
     budget: TraceBudget,
     emit: TraceEmit,
+    emitDelta?: DeltaEmit,
 ) => Promise<{
     graph: CitationGraph;
     cycles: WorkId[][];
@@ -35,6 +38,7 @@ export type TraceChain = (
 export type JudgePrimacy = (
     graph: CitationGraph,
     emit: TraceEmit,
+    emitDelta?: DeltaEmit,
 ) => Promise<{
     /** Same nodes, with `primacy` filled in. */
     nodes: CitationNode[];
@@ -48,6 +52,7 @@ export type AuditDrift = (
     claim: string,
     origins: CitationNode[],
     emit: TraceEmit,
+    emitDelta?: DeltaEmit,
 ) => Promise<{ findings: DriftFinding[]; errors: RunError[] }>;
 
 /** Deterministic score in code + LLM prose. */

@@ -11,73 +11,89 @@ import type {
     WriteVerdict,
 } from "@/core/run/domain";
 
-export const resolveInputStub: ResolveInput = async (input, emit) => {
+export const resolveInputStub: ResolveInput = async (
+    input,
+    emit,
+    emitDelta,
+) => {
     emit({
         agent: "input-adapter",
         phase: "done",
         summary: `STUB: anchored input kind=${input.kind}`,
     });
-    return {
-        claim: input.kind === "claim" ? input.text : "stub claim",
-        anchors: ["W0"],
-        errors: [],
-    };
+    const claim = input.kind === "claim" ? input.text : "stub claim";
+    emitDelta?.({ type: "claim-resolved", claim, anchors: ["W0"] });
+    return { claim, anchors: ["W0"], errors: [] };
 };
 
-export const traceChainStub: TraceChain = async (anchors, budget, emit) => {
+export const traceChainStub: TraceChain = async (
+    anchors,
+    budget,
+    emit,
+    emitDelta,
+) => {
     emit({
         agent: "chain-tracer",
         phase: "done",
         summary: `STUB: traced ${anchors.length} anchors (budget depth=${budget.maxDepth})`,
     });
-    return {
-        graph: {
-            nodes: [
-                {
-                    id: "W0",
-                    title: "Stub anchor work",
-                    year: 2024,
-                    doi: null,
-                    type: "article",
-                    venue: null,
-                    authors: [],
-                    abstract: null,
-                    citedByCount: 0,
-                    isRetracted: false,
-                    oaUrl: null,
-                    depth: 0,
-                    source: "openalex",
-                    fetchStatus: "resolved",
-                },
-            ],
-            edges: [],
-            truncated: false,
-        },
-        cycles: [],
-        errors: [],
+    const graph = {
+        nodes: [
+            {
+                id: "W0" as const,
+                title: "Stub anchor work",
+                year: 2024,
+                doi: null,
+                type: "article",
+                venue: null,
+                authors: [] as string[],
+                abstract: null,
+                citedByCount: 0,
+                isRetracted: false,
+                oaUrl: null,
+                depth: 0,
+                source: "openalex" as const,
+                fetchStatus: "resolved" as const,
+            },
+        ],
+        edges: [] as { from: string; to: string }[],
+        truncated: false,
     };
+    emitDelta?.({ type: "graph-delta", nodes: graph.nodes, edges: graph.edges });
+    return { graph, cycles: [], errors: [] };
 };
 
-export const judgePrimacyStub: JudgePrimacy = async (graph, emit) => {
+export const judgePrimacyStub: JudgePrimacy = async (
+    graph,
+    emit,
+    emitDelta,
+) => {
     emit({
         agent: "primacy-judge",
         phase: "done",
         summary: `STUB: labeled ${graph.nodes.length} nodes`,
     });
-    return {
-        nodes: graph.nodes.map((n) => ({
-            ...n,
-            primacy: {
-                label: "unknown" as const,
-                method: "heuristic" as const,
-            },
-        })),
-        originCandidates: graph.nodes.slice(0, 1).map((n) => n.id),
-        errors: [],
-    };
+    const nodes = graph.nodes.map((n) => ({
+        ...n,
+        primacy: {
+            label: "unknown" as const,
+            method: "heuristic" as const,
+        },
+    }));
+    const originCandidates = nodes.slice(0, 1).map((n) => n.id);
+    emitDelta?.({
+        type: "nodes-patch",
+        patches: nodes.map((n) => ({ id: n.id, primacy: n.primacy })),
+    });
+    emitDelta?.({ type: "origins", ids: originCandidates });
+    return { nodes, originCandidates, errors: [] };
 };
 
-export const auditDriftStub: AuditDrift = async (_claim, origins, emit) => {
+export const auditDriftStub: AuditDrift = async (
+    _claim,
+    origins,
+    emit,
+) => {
     emit({
         agent: "drift-auditor",
         phase: "done",
