@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
     initialLiveView,
     type LiveView,
+    liveRunState,
     streamReducer,
 } from "@/core/run/client/stream";
 import {
@@ -35,8 +36,10 @@ export function useRunStream() {
     const [live, setLive] = useState<LiveView | null>(null);
     const [state, setState] = useState<RunState | null>(null);
     const [status, setStatus] = useState<Status>("idle");
+    const inputRef = useRef<RunInput | null>(null);
 
     const start = useCallback(async (input: RunInput) => {
+        inputRef.current = input;
         setState(null);
         setStatus("running");
         let view = initialLiveView();
@@ -101,5 +104,11 @@ export function useRunStream() {
         }
     }, []);
 
-    return { live, state, start, status };
+    const displayState =
+        state ??
+        (live && inputRef.current
+            ? liveRunState(live, inputRef.current)
+            : null);
+
+    return { live, state: displayState, start, status };
 }
