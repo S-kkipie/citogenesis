@@ -1,9 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { buildRunGraph } from "../graph";
+import {
+    auditDriftStub,
+    judgePrimacyStub,
+    resolveInputStub,
+    traceChainStub,
+    writeVerdictStub,
+} from "../stubs";
+
+/** Fake ports: exercises the graph's wiring without network or LLM calls. */
+const stubPorts = {
+    resolveInput: resolveInputStub,
+    traceChain: traceChainStub,
+    judgePrimacy: judgePrimacyStub,
+    auditDrift: auditDriftStub,
+    writeVerdict: writeVerdictStub,
+};
 
 describe("run graph skeleton", () => {
     it("runs all five agents and produces a verdict", async () => {
-        const graph = buildRunGraph();
+        const graph = buildRunGraph(stubPorts);
         const final = await graph.invoke({
             input: { kind: "claim", text: "spinach is rich in iron" },
         });
@@ -26,7 +42,7 @@ describe("run graph skeleton", () => {
     // verdict node must read that same graph — handing it ChainTracer's raw
     // output would leave every node unlabelled and sink every verdict to LOW.
     it("hands the verdict writer the primacy-labelled graph", async () => {
-        const graph = buildRunGraph();
+        const graph = buildRunGraph(stubPorts);
         const final = await graph.invoke({
             input: { kind: "claim", text: "spinach is rich in iron" },
         });

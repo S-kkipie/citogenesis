@@ -4,9 +4,7 @@
  * input-adapter → chain-tracer → primacy-judge → drift-auditor → verdict
  *
  * Node bodies delegate to the port implementations (see domain/ports.ts).
- * Stubs are swapped for the real modules as workstreams land:
- *   Part 1 → resolveInput/traceChain from "@/core/citations"
- *   Part 2 → judgePrimacy/auditDrift/writeVerdict from "@/core/agents"
+ * This is the single place the implementations are bound.
  */
 import {
     END,
@@ -16,7 +14,15 @@ import {
     StateSchema,
 } from "@langchain/langgraph";
 import { z } from "zod";
-import type { TraceEmit, TraceEvent } from "@/core/run/domain";
+import type {
+    AuditDrift,
+    JudgePrimacy,
+    ResolveInput,
+    TraceChain,
+    TraceEmit,
+    TraceEvent,
+    WriteVerdict,
+} from "@/core/run/domain";
 import {
     citationGraphSchema,
     driftFindingSchema,
@@ -27,20 +33,42 @@ import {
     verdictSchema,
     workIdSchema,
 } from "@/core/run/domain";
-import {
-    auditDriftStub,
-    judgePrimacyStub,
-    resolveInputStub,
-    traceChainStub,
-    writeVerdictStub,
-} from "./stubs";
 
-// Port implementations in use. Swap stubs → real modules here, only here.
-const resolveInput = resolveInputStub;
-const traceChain = traceChainStub;
-const judgePrimacy = judgePrimacyStub;
-const auditDrift = auditDriftStub;
-const writeVerdict = writeVerdictStub;
+/**
+ * The five agent implementations. Defaults are the live modules; tests
+ * inject fakes so the pipeline's wiring can be exercised offline.
+ */
+export type RunPorts = {
+    resolveInput: ResolveInput;
+    traceChain: TraceChain;
+    judgePrimacy: JudgePrimacy;
+    auditDrift: AuditDrift;
+    writeVerdict: WriteVerdict;
+};
+
+/**
+ * The live modules read ServerConfig at import time, which validates the
+ * environment. Loading them lazily keeps a fully-injected graph — the
+ * wiring tests — runnable with no env at all. Memoized: one load per
+ * process, not per run.
+ */
+let livePortsPromise: Promise<RunPorts> | undefined;
+const loadLivePorts = () => {
+    livePortsPromise ??= (async () => {
+        const [agents, citations] = await Promise.all([
+            import("@/core/agents"),
+            import("@/core/citations"),
+        ]);
+        return {
+            resolveInput: citations.resolveInput,
+            traceChain: citations.traceChain,
+            judgePrimacy: agents.judgePrimacy,
+            auditDrift: agents.auditDrift,
+            writeVerdict: agents.writeVerdict,
+        };
+    })();
+    return livePortsPromise;
+};
 
 const appendReducer = <T>(itemSchema: z.ZodType<T>) =>
     new ReducedValue(
@@ -83,19 +111,24 @@ const collector = (): { emit: TraceEmit; events: TraceEvent[] } => {
     };
 };
 
-export const buildRunGraph = () =>
-    new StateGraph(RunGraphState)
+export const buildRunGraph = (ports: Partial<RunPorts> = {}) => {
+    const port = async <K extends keyof RunPorts>(
+        name: K,
+    ): Promise<RunPorts[K]> =>
+        (ports[name] as RunPorts[K] | undefined) ??
+        (await loadLivePorts())[name];
+
+    return new StateGraph(RunGraphState)
         .addNode("input-adapter", async (state) => {
             const { emit, events } = collector();
-            const { claim, anchors, errors } = await resolveInput(
-                state.input,
-                emit,
-            );
+            const { claim, anchors, errors } = await (
+                await port("resolveInput")
+            )(state.input, emit);
             return { claim, anchors, trace: events, errors };
         })
         .addNode("chain-tracer", async (state) => {
             const { emit, events } = collector();
-            const { graph, cycles, errors } = await traceChain(
+            const { graph, cycles, errors } = await (await port("traceChain"))(
                 state.anchors,
                 TRACE_BUDGET,
                 emit,
@@ -104,10 +137,9 @@ export const buildRunGraph = () =>
         })
         .addNode("primacy-judge", async (state) => {
             const { emit, events } = collector();
-            const { nodes, originCandidates, errors } = await judgePrimacy(
-                state.graph,
-                emit,
-            );
+            const { nodes, originCandidates, errors } = await (
+                await port("judgePrimacy")
+            )(state.graph, emit);
             return {
                 graph: { ...state.graph, nodes },
                 originCandidates,
@@ -121,7 +153,7 @@ export const buildRunGraph = () =>
             const origins = state.originCandidates
                 .map((id) => byId.get(id))
                 .filter((n) => n !== undefined);
-            const { findings, errors } = await auditDrift(
+            const { findings, errors } = await (await port("auditDrift"))(
                 state.claim,
                 origins,
                 emit,
@@ -130,7 +162,7 @@ export const buildRunGraph = () =>
         })
         .addNode("verdict-writer", async (state) => {
             const { emit, events } = collector();
-            const verdict = await writeVerdict(
+            const verdict = await (await port("writeVerdict"))(
                 {
                     claim: state.claim,
                     graph: state.graph,
@@ -149,3 +181,4 @@ export const buildRunGraph = () =>
         .addEdge("drift-auditor", "verdict-writer")
         .addEdge("verdict-writer", END)
         .compile();
+};
