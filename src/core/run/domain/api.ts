@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { runStateSchema, verdictSchema } from "./state";
-import { traceEventSchema } from "./trace";
+import { isoInstant, traceEventSchema } from "./trace";
 
 export const runStatusSchema = z.enum(["running", "done", "failed"]);
 export type RunStatus = z.infer<typeof runStatusSchema>;
@@ -28,7 +28,7 @@ export type RunSseEvent = z.infer<typeof runSseEventSchema>;
 /** Row shape returned by GET /api/v1/runs/:id. */
 export const runRecordSchema = z.object({
     id: z.string(),
-    createdAt: z.iso.datetime(),
+    createdAt: isoInstant,
     status: runStatusSchema,
     state: runStateSchema,
 });

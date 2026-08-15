@@ -1,0 +1,12 @@
+[
+    {
+        "date": "2026-08-15",
+        "macrostructure": "Map/Diagram",
+        "theme": "Midnight-adjacent (custom-tuned, anchor 250, accent amber 60)",
+        "theme_axes": "dark / grotesk-sans (Tomorrow) / warm-amber",
+        "enrichment": "E5 hand-built SVG citation graph + paper-shaders MeshGradient",
+        "nav": "N9 edge-aligned",
+        "footer": "Ft5 statement",
+        "brief": "Citogenesis landing · citation provenance auditor · audience researchers · CTA /audit"
+    }
+]
