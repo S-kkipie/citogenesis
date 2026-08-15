@@ -10,6 +10,7 @@ import {
 import type { AgentName, RunState } from "@/core/run/domain";
 import { AuditLog } from "./AuditLog";
 import { CitationGraph } from "./CitationGraph";
+import { DriftPanel } from "./DriftPanel";
 import { Legend } from "./Legend";
 import { PipelineBar } from "./PipelineBar";
 import { VerdictCard } from "./VerdictCard";
@@ -25,7 +26,7 @@ export function RunDashboard({
     live?: LiveView;
     mode: DashboardMode;
 }) {
-    const [, setSelected] = useState<string | null>(null);
+    const [selected, setSelected] = useState<string | null>(null);
     const displayAgents =
         live?.agents ??
         (Object.fromEntries(
@@ -46,6 +47,13 @@ export function RunDashboard({
                     <div className="flex h-full items-center justify-center text-[#57606A]">
                         Enter a claim to begin.
                     </div>
+                )}
+                {state && selected && (
+                    <DriftPanel
+                        state={state}
+                        selectedId={selected}
+                        onClose={() => setSelected(null)}
+                    />
                 )}
                 <Legend />
             </section>
