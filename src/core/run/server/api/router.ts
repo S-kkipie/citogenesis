@@ -5,7 +5,7 @@ import type { RunSseEvent, RunState } from "@/core/run/domain";
 import { runInputSchema } from "@/core/run/domain";
 import { db } from "@/server/drizzle/db";
 import { runs } from "@/server/drizzle/schemas";
-import { buildRunGraph } from "../graph";
+import { buildRunGraph, type LiveChunk } from "../graph";
 
 const emptyState = (input: RunState["input"]): RunState => ({
     input,
@@ -37,19 +37,25 @@ export const runsRouter = new Elysia({ prefix: "/runs" })
             try {
                 const graph = buildRunGraph();
                 let finalState: RunState | undefined;
-                let emitted = 0;
 
                 const stream = await graph.stream(
                     { input: body },
-                    { streamMode: "values" },
+                    { streamMode: ["values", "custom"] },
                 );
-                for await (const snapshot of stream) {
-                    // Stream only trace events not yet sent.
-                    for (const t of snapshot.trace.slice(emitted)) {
-                        yield event({ type: "trace", event: t });
+                for await (const chunk of stream as AsyncIterable<
+                    [string, unknown]
+                >) {
+                    const [mode, payload] = chunk;
+                    if (mode === "custom") {
+                        const live = payload as LiveChunk;
+                        yield event(
+                            live.kind === "trace"
+                                ? { type: "trace", event: live.event }
+                                : live.event,
+                        );
+                    } else if (mode === "values") {
+                        finalState = payload as RunState;
                     }
-                    emitted = snapshot.trace.length;
-                    finalState = snapshot as RunState;
                 }
 
                 if (!finalState?.verdict) {
