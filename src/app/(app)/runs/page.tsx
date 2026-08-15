@@ -9,6 +9,9 @@ import type { RunStatus } from "@/core/run/domain";
  * the page actually renders.
  */
 
+/** Always render fresh — a statically-baked history list would never update. */
+export const dynamic = "force-dynamic";
+
 const STATUS_COLOR: Record<RunStatus, string> = {
     done: "text-[var(--au-healthy)]",
     failed: "text-[var(--au-flag)]",
