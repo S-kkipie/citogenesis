@@ -1,0 +1,159 @@
+import { describe, expect, it, vi } from "vitest";
+import {
+    TRACE_BUDGET,
+    type TraceBudget,
+    type WorkId,
+} from "../../../run/domain/graph";
+import type { FetchedWork } from "../../types";
+import { traceChainWith } from "../bfs";
+
+// A tiny fake graph: W1 -> [W2, W3]; W2 -> [W1] (cycle back to anchor).
+const fw = (
+    id: string,
+    refs: string[],
+    topics: string[] = ["T1"],
+): FetchedWork => ({
+    node: {
+        id,
+        title: id,
+        year: 2000,
+        doi: null,
+        type: "article",
+        venue: null,
+        authors: [],
+        abstract: null,
+        citedByCount: 0,
+        isRetracted: false,
+        oaUrl: null,
+        depth: 0,
+        source: "openalex",
+        fetchStatus: "resolved",
+    },
+    referencedWorks: refs as WorkId[],
+    topicIds: topics,
+});
+
+const DB: Record<string, FetchedWork> = {
+    W1: fw("W1", ["W2", "W3"]),
+    W2: fw("W2", ["W1"]),
+    W3: fw("W3", []),
+};
+
+const fetchWorks = async (ids: WorkId[]) => {
+    const works = new Map<WorkId, FetchedWork>();
+    const missing: WorkId[] = [];
+    for (const id of ids) DB[id] ? works.set(id, DB[id]) : missing.push(id);
+    return { works, missing };
+};
+
+describe("traceChainWith", () => {
+    it("builds the backwards graph and detects the cycle", async () => {
+        const emit = vi.fn();
+        const { graph, cycles, errors } = await traceChainWith(
+            ["W1"],
+            TRACE_BUDGET,
+            emit,
+            fetchWorks,
+        );
+        expect(graph.nodes.map((n) => n.id).sort()).toEqual(["W1", "W2", "W3"]);
+        expect(graph.edges).toContainEqual({ from: "W1", to: "W2" });
+        expect(cycles.some((c) => c.includes("W1") && c.includes("W2"))).toBe(
+            true,
+        );
+        expect(errors).toEqual([]);
+    });
+
+    it("keeps an unresolved node (placeholder) and reports a recovered error", async () => {
+        const emit = vi.fn();
+        const anchor = fw("W1", ["Wmissing"]);
+        const only = async (ids: WorkId[]) => {
+            const works = new Map<WorkId, FetchedWork>();
+            const missing: WorkId[] = [];
+            for (const id of ids)
+                id === "W1" ? works.set(id, anchor) : missing.push(id);
+            return { works, missing };
+        };
+        const { graph, errors } = await traceChainWith(
+            ["W1"],
+            TRACE_BUDGET,
+            emit,
+            only,
+        );
+        // biome-ignore lint/style/noNonNullAssertion: This fixture must produce the unresolved placeholder under test.
+        const un = graph.nodes.find((n) => n.id === "Wmissing")!;
+        expect(un.fetchStatus).toBe("unresolved");
+        expect(un.title).toBe("(unresolved)");
+        expect(
+            errors.some((e) => e.recovered && e.agent === "chain-tracer"),
+        ).toBe(true);
+    });
+
+    it("respects maxRefsPerNode and sets truncated", async () => {
+        const many = fw(
+            "W1",
+            Array.from({ length: 40 }, (_, i) => `Wr${i}`),
+        );
+        const db: Record<string, FetchedWork> = { W1: many };
+        for (let i = 0; i < 40; i++) db[`Wr${i}`] = fw(`Wr${i}`, [], ["T1"]);
+        const f = async (ids: WorkId[]) => {
+            const works = new Map<WorkId, FetchedWork>();
+            for (const id of ids) if (db[id]) works.set(id, db[id]);
+            return { works, missing: ids.filter((i) => !db[i]) };
+        };
+        const { graph } = await traceChainWith(
+            ["W1"],
+            TRACE_BUDGET,
+            vi.fn(),
+            f,
+        );
+        // 1 anchor + 25 kept refs
+        expect(graph.nodes).toHaveLength(26);
+        expect(graph.truncated).toBe(true);
+    });
+
+    it("recovers when fetchWorks rejects for a batch, keeping partial graph and reporting a recovered error", async () => {
+        const emit = vi.fn();
+        const anchor = fw("W1", ["W2"]);
+        const f = async (ids: WorkId[]) => {
+            if (ids.includes("W1")) {
+                const works = new Map<WorkId, FetchedWork>([["W1", anchor]]);
+                return { works, missing: [] };
+            }
+            throw new Error("network exploded");
+        };
+        const { graph, errors } = await traceChainWith(
+            ["W1"],
+            TRACE_BUDGET,
+            emit,
+            f,
+        );
+        expect(graph.nodes.map((n) => n.id).sort()).toEqual(["W1", "W2"]);
+        // biome-ignore lint/style/noNonNullAssertion: This fixture must produce the unresolved placeholder under test.
+        const un = graph.nodes.find((n) => n.id === "W2")!;
+        expect(un.fetchStatus).toBe("unresolved");
+        expect(
+            errors.some((e) => e.recovered && e.agent === "chain-tracer"),
+        ).toBe(true);
+    });
+
+    it("never emits a dangling edge when the node budget is hit mid-parent", async () => {
+        const anchor = fw("W1", ["Wb0", "Wb1", "Wb2", "Wb3", "Wb4"]);
+        const db: Record<string, FetchedWork> = { W1: anchor };
+        for (let i = 0; i < 5; i++) db[`Wb${i}`] = fw(`Wb${i}`, [], ["T1"]);
+        const f = async (ids: WorkId[]) => {
+            const works = new Map<WorkId, FetchedWork>();
+            for (const id of ids) if (db[id]) works.set(id, db[id]);
+            return { works, missing: ids.filter((i) => !db[i]) };
+        };
+        const budget = {
+            maxDepth: 1,
+            maxRefsPerNode: 25,
+            maxNodes: 2,
+        } as unknown as TraceBudget;
+        const { graph } = await traceChainWith(["W1"], budget, vi.fn(), f);
+        expect(
+            graph.edges.every((e) => graph.nodes.some((n) => n.id === e.to)),
+        ).toBe(true);
+        expect(graph.truncated).toBe(true);
+    });
+});
