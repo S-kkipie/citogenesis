@@ -81,6 +81,25 @@ describe("streamReducer", () => {
         expect(v.terminal).toBe("failed");
         expect(v.failureMessage).toBe("boom");
     });
+
+    it("marks running agents as error when run fails", () => {
+        const v = fold([
+            { type: "accepted", runId: "r1" },
+            {
+                type: "trace",
+                event: {
+                    ts: "t",
+                    agent: "input-adapter",
+                    phase: "start",
+                    summary: "starting",
+                },
+            },
+            { type: "failed", runId: "r1", message: "boom" },
+        ]);
+        expect(v.agents["input-adapter"]).toBe("error");
+        expect(v.agents.verdict).toBe("idle");
+        expect(v.terminal).toBe("failed");
+    });
 });
 
 const node = (id: string, depth = 0): CitationNode => ({

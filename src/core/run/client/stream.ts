@@ -108,13 +108,21 @@ export function streamReducer(view: LiveView, event: RunSseEvent): LiveView {
                 agents,
             };
         }
-        case "failed":
+        case "failed": {
+            const agents = { ...view.agents };
+            for (const a of AGENT_ORDER) {
+                if (agents[a] === "running") {
+                    agents[a] = "error";
+                }
+            }
             return {
                 ...view,
                 terminal: "failed",
                 failureMessage: event.message,
                 runId: event.runId,
+                agents,
             };
+        }
         case "claim-resolved":
             return {
                 ...view,
