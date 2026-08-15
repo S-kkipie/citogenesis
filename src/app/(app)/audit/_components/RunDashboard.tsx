@@ -2,20 +2,36 @@
 
 import { useMemo, useState } from "react";
 import { deriveGraphView } from "@/core/run/client/graph-view";
-import type { LiveView } from "@/core/run/client/stream";
-import type { RunState } from "@/core/run/domain";
+import {
+    AGENT_ORDER,
+    type AgentStatus,
+    type LiveView,
+} from "@/core/run/client/stream";
+import type { AgentName, RunState } from "@/core/run/domain";
+import { AuditLog } from "./AuditLog";
 import { CitationGraph } from "./CitationGraph";
+import { Legend } from "./Legend";
+import { PipelineBar } from "./PipelineBar";
+import { VerdictCard } from "./VerdictCard";
 
 export type DashboardMode = "live" | "replay";
 
 export function RunDashboard({
     state,
+    live,
+    mode: _mode,
 }: {
     state: RunState | null;
     live?: LiveView;
     mode: DashboardMode;
 }) {
-    const [selected, setSelected] = useState<string | null>(null);
+    const [, setSelected] = useState<string | null>(null);
+    const displayAgents =
+        live?.agents ??
+        (Object.fromEntries(
+            AGENT_ORDER.map((a) => [a, "done" as const]),
+        ) as Record<AgentName, AgentStatus>);
+
     const view = useMemo(
         () => (state ? deriveGraphView(state) : null),
         [state],
@@ -31,12 +47,12 @@ export function RunDashboard({
                         Enter a claim to begin.
                     </div>
                 )}
+                <Legend />
             </section>
             <aside className="flex flex-col overflow-hidden">
-                {/* Task 4 fills: VerdictCard, PipelineBar, AuditLog. Task 5: DriftPanel(selected). */}
-                <pre className="overflow-auto p-3 text-xs">
-                    {selected ?? "no selection"}
-                </pre>
+                <VerdictCard verdict={state?.verdict ?? null} />
+                <PipelineBar agents={displayAgents} />
+                <AuditLog trace={live?.trace ?? state?.trace ?? []} />
             </aside>
         </div>
     );
