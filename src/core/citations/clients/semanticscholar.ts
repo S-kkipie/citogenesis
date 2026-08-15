@@ -28,8 +28,8 @@ export function s2GetPaper(
   externalId: string, opts: { http?: HttpOpts } = {},
 ): Promise<S2Paper | null> {
   return throttle(async () => {
-    const url = `${BASE}/paper/${encodeURIComponent(externalId)}?fields=${FIELDS}`;
     try {
+      const url = `${BASE}/paper/${encodeURIComponent(externalId)}?fields=${FIELDS}`;
       const j = await getJson<S2Raw>(url, opts.http);
       return {
         title: j.title ?? null, year: j.year ?? null,

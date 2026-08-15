@@ -16,4 +16,10 @@ describe("s2GetPaper", () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("no", { status: 404 }));
     expect(await s2GetPaper("DOI:bad", { http: { fetchImpl, baseDelayMs: 0 } })).toBeNull();
   });
+
+  it("returns null for malformed external ID instead of throwing", async () => {
+    const fetchImpl = vi.fn();
+    await expect(s2GetPaper("\uD800", { http: { fetchImpl, baseDelayMs: 0 } })).resolves.toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });
