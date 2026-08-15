@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Elysia, sse } from "elysia";
 import { nanoid } from "nanoid";
 import type { RunSseEvent, RunState } from "@/core/run/domain";
-import { runInputSchema } from "@/core/run/domain";
+import { inputKey, runInputSchema } from "@/core/run/domain";
 import { db } from "@/server/drizzle/db";
 import { runs } from "@/server/drizzle/schemas";
 import { buildRunGraph, type LiveChunk } from "../graph";
@@ -27,11 +27,39 @@ export const runsRouter = new Elysia({ prefix: "/runs" })
     .post(
         "/",
         async function* ({ body }) {
+            const key = inputKey(body);
+            const [existing] = await db
+                .select({ id: runs.id, state: runs.state })
+                .from(runs)
+                .where(and(eq(runs.inputKey, key), eq(runs.status, "done")))
+                .orderBy(desc(runs.createdAt))
+                .limit(1);
+            if (existing?.state.verdict) {
+                yield event({ type: "accepted", runId: existing.id });
+                yield event({
+                    type: "trace",
+                    event: {
+                        ts: new Date().toISOString(),
+                        agent: "input-adapter",
+                        phase: "done",
+                        summary: `Identical input already audited — reusing run ${existing.id}`,
+                        data: { reusedRunId: existing.id },
+                    },
+                });
+                yield event({
+                    type: "done",
+                    runId: existing.id,
+                    verdict: existing.state.verdict,
+                });
+                return;
+            }
+
             const runId = nanoid();
             await db.insert(runs).values({
                 id: runId,
                 status: "running",
                 state: emptyState(body),
+                inputKey: key,
             });
             yield event({ type: "accepted", runId });
 
