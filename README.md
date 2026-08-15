@@ -2,6 +2,8 @@
 
 **Trace every claim to its root. Catch the ones with no root.**
 
+**🔴 Live demo: https://citogenesis.vercel.app/audit**
+
 A multi-agent AI system that audits the **citation provenance** of a scientific
 claim — following the trail of references backwards until it either hits real
 primary evidence or exposes a citation that only *looks* true because sources
@@ -77,13 +79,51 @@ logged to an inspectable run-trace JSON.
 - Cost efficiency 15% — graph work is cheap API; LLM only on Primacy/Drift.
 - Originality 10% — nobody else audits *citation provenance* adversarially.
 
-## Stack (proposed)
+## Stack
 
-- Python. Orchestration: **LangGraph** (a graph engine for a graph problem) or CrewAI.
-- Cheap LLM (DeepSeek / Llama) for node labeling; stronger model reserved for DriftAuditor.
-- Frontend: interactive graph (react-flow / vis-network).
+- **TypeScript end-to-end.** Next.js (App Router) + Elysia (typed API, SSE).
+- **Orchestration: LangGraph** — a graph engine for a graph problem. Each
+  agent is a node; every trace event and graph delta streams live over SSE
+  via LangGraph's custom stream mode while the pipeline runs.
+- **LLMs (Gemini):** `gemini-3.5-flash-lite` labels nodes (PrimacyJudge),
+  `gemini-3.6-flash` reads full-text for drift + writes the verdict prose,
+  `gemini-3.1-pro` as drift fallback. The verdict *score* is computed
+  deterministically in code — words from the model, numbers from code.
+- **Frontend:** Sigma (WebGL) citation graph that grows in real time +
+  an orchestration rail showing the agents working and handing off live.
+- **Postgres (drizzle)** persists every run: shareable permalinks, full
+  audit trace, and input-dedupe (identical inputs reuse the finished run
+  at zero cost).
+
+## Setup
+
+```bash
+pnpm install
+cp .env.example .env          # fill: DATABASE_URL, GEMINI_API_KEY, OPENALEX_MAILTO
+docker compose up -d          # local Postgres (or point DATABASE_URL anywhere)
+pnpm db:migrate
+pnpm dev                      # http://localhost:3000/audit
+```
+
+`pnpm test` runs the suite (~165 tests, no network needed).
+
+## Reproducibility
+
+- **Models:** Gemini `3.5-flash-lite` (primacy labeling, batched 50/call),
+  `3.6-flash` (drift audit + verdict prose), `3.1-pro` (drift fallback).
+- **APIs:** OpenAlex (free, no key, polite-pool via `mailto`) for the
+  citation graph + metadata; arXiv/PMC PDFs via OpenAlex OA locations for
+  full text. Semantic Scholar client included as backup source.
+- **Datasets:** none — every run pulls live data from OpenAlex.
+- **Estimated run cost:** one audit ≈ 10–25 OpenAlex requests + 5–10 Gemini
+  calls (mostly flash-lite) → **well under $0.01/run**; typical wall time
+  60–90 s. Repeated inputs are deduped and cost zero.
+- **Budgets/limits:** BFS capped at depth 3, 25 refs/node, 200 nodes.
+  Claim-drift needs an open-access origin (falls back to abstract, flagged
+  as lower confidence). English-centric. Runs cap at 300 s on the hosted
+  demo.
 
 ## Status
 
-🌱 Brainstormed & scoped. Feasibility (APIs) confirmed. Not yet built.
-See [CLAUDE.md](./CLAUDE.md) for the full working brief.
+✅ Built, tested, and deployed: https://citogenesis.vercel.app — run a
+claim on `/audit`, watch the agents work live, browse past runs on `/runs`.
