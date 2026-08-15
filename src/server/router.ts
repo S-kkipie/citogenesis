@@ -6,6 +6,7 @@ import { getLogger } from "@logtape/logtape";
 import { Elysia } from "elysia";
 import { z } from "zod";
 import { ServerConfig } from "@/config/server-config";
+import { runsRouter } from "@/core/run/server/api/router";
 import type { APIResponse } from "./common/responses";
 
 const apiErrorLogger = getLogger(["server", "error"]);
@@ -60,8 +61,8 @@ const app = new Elysia({ prefix: "/api/v1" })
             code: isValidation ? "VALIDATION" : "INTERNAL_SERVER_ERROR",
             status: isValidation ? 400 : 500,
         } satisfies APIResponse;
-    });
-// The runs router (src/core/run/server) plugs in here once contracts land.
+    })
+    .use(runsRouter);
 
 export default app;
 export type AppRouter = typeof app;
