@@ -63,7 +63,10 @@ export function RunDashboard({
 
     // A cleared run (new run starting) closes the inspector.
     useEffect(() => {
-        if (!state) setSelected(null);
+        if (!state) {
+            setSelected(null);
+            setRevealKey(0);
+        }
     }, [state]);
 
     // Auto-open the worst drifted origin — but only once the run is over.

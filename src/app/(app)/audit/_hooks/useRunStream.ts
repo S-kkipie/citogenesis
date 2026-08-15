@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
     initialLiveView,
     type LiveView,
@@ -104,11 +104,16 @@ export function useRunStream() {
         }
     }, []);
 
-    const displayState =
-        state ??
-        (live && inputRef.current
-            ? liveRunState(live, inputRef.current)
-            : null);
+    // Compute display state: use settled state if available, else synthesize from live.
+    // Ref is intentionally not in deps: it's stable per run, and live changes on every progress event.
+    const displayState = useMemo(
+        () =>
+            state ??
+            (live && inputRef.current
+                ? liveRunState(live, inputRef.current)
+                : null),
+        [state, live],
+    );
 
     return { live, state: displayState, start, status };
 }

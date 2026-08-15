@@ -76,7 +76,7 @@ export function OrchestraRail({
 
     return (
         <aside className="flex min-h-0 flex-col overflow-hidden bg-[var(--au-paper-2)]">
-            <div className="flex-none overflow-auto p-3">
+            <div className="min-h-0 shrink overflow-auto p-3">
                 {AGENT_ORDER.map((agent, i) => {
                     const status = agents[agent];
                     const next = AGENT_ORDER[i + 1];
