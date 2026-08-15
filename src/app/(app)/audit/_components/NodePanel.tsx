@@ -198,12 +198,16 @@ export function NodePanel({
                             <p className="text-[10px] text-[var(--au-neutral)] uppercase">
                                 Origin said
                             </p>
-                            <p className="font-[family-name:var(--font-mono)] text-sm italic">
-                                “
-                                {drift.evidenceQuote ??
-                                    "no verbatim span available"}
-                                ”
-                            </p>
+                            {drift.evidenceQuote ? (
+                                <p className="font-[family-name:var(--font-mono)] text-sm italic">
+                                    “{drift.evidenceQuote}”
+                                </p>
+                            ) : (
+                                <p className="text-[var(--au-neutral)] text-xs">
+                                    No verbatim span in the available text — see
+                                    the explanation below.
+                                </p>
+                            )}
                         </div>
                         <div className="rounded border border-[var(--au-rule)] bg-[var(--au-panel)] p-2">
                             <p className="text-[10px] text-[var(--au-neutral)] uppercase">
