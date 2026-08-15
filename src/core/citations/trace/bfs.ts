@@ -16,9 +16,11 @@ export type FetchWorksFn = (
     ids: WorkId[],
 ) => Promise<{ works: Map<WorkId, FetchedWork>; missing: WorkId[] }>;
 
+export type TraceBudgetInput = { [K in keyof TraceBudget]: number };
+
 export async function traceChainWith(
     anchors: WorkId[],
-    budget: TraceBudget,
+    budget: TraceBudgetInput,
     emit: TraceEmit,
     fetchWorks: FetchWorksFn,
 ): Promise<{ graph: CitationGraph; cycles: WorkId[][]; errors: RunError[] }> {
