@@ -8,7 +8,7 @@ import type { OpenAlexOpts } from "./types";
 const liveOpts: OpenAlexOpts = { mailto: ServerConfig.openAlexMailto };
 
 export const resolveInput: ResolveInput = (input, emit) =>
-  resolveInputWith(input, emit, liveOpts);
+    resolveInputWith(input, emit, liveOpts);
 
 export const traceChain: TraceChain = (anchors, budget, emit) =>
-  traceChainWith(anchors, budget, emit, (ids) => getWorks(ids, liveOpts));
+    traceChainWith(anchors, budget, emit, (ids) => getWorks(ids, liveOpts));

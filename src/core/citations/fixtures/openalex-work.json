@@ -1,32 +1,27 @@
 {
-  "id": "https://openalex.org/W1",
-  "title": "A study",
-  "publication_year": 2001,
-  "doi": "https://doi.org/10.1/x",
-  "type": "article",
-  "primary_location": {
-    "source": {
-      "display_name": "Nature"
-    }
-  },
-  "authorships": [
-    { "author": { "display_name": "Ada L." } }
-  ],
-  "abstract_inverted_index": {
-    "Big": [0],
-    "claim": [1]
-  },
-  "cited_by_count": 42,
-  "is_retracted": false,
-  "best_oa_location": {
-    "pdf_url": "http://oa/x.pdf"
-  },
-  "referenced_works": [
-    "https://openalex.org/W2",
-    "https://openalex.org/W3"
-  ],
-  "topics": [
-    { "id": "https://openalex.org/T10" },
-    { "id": "https://openalex.org/T11" }
-  ]
+    "id": "https://openalex.org/W1",
+    "title": "A study",
+    "publication_year": 2001,
+    "doi": "https://doi.org/10.1/x",
+    "type": "article",
+    "primary_location": {
+        "source": {
+            "display_name": "Nature"
+        }
+    },
+    "authorships": [{ "author": { "display_name": "Ada L." } }],
+    "abstract_inverted_index": {
+        "Big": [0],
+        "claim": [1]
+    },
+    "cited_by_count": 42,
+    "is_retracted": false,
+    "best_oa_location": {
+        "pdf_url": "http://oa/x.pdf"
+    },
+    "referenced_works": ["https://openalex.org/W2", "https://openalex.org/W3"],
+    "topics": [
+        { "id": "https://openalex.org/T10" },
+        { "id": "https://openalex.org/T11" }
+    ]
 }
