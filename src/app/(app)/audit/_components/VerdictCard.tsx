@@ -6,8 +6,16 @@ const DOT: Record<Verdict["confidence"], string> = {
     HIGH: "bg-[var(--au-healthy)]",
 };
 
-export function VerdictCard({ verdict }: { verdict: Verdict | null }) {
+export function VerdictCard({
+    verdict,
+    embedded = false,
+}: {
+    verdict: Verdict | null;
+    /** Inside a rail card: no outer border/padding, hidden while null. */
+    embedded?: boolean;
+}) {
     if (!verdict) {
+        if (embedded) return null;
         return (
             <div className="border-[var(--au-rule)] border-b p-4 text-[var(--au-muted)] text-sm">
                 Awaiting verdict…
@@ -16,7 +24,13 @@ export function VerdictCard({ verdict }: { verdict: Verdict | null }) {
     }
 
     return (
-        <div className="border-[var(--au-rule)] border-b p-4">
+        <div
+            className={
+                embedded
+                    ? "mt-2 border-[var(--au-rule)] border-t pt-2"
+                    : "border-[var(--au-rule)] border-b p-4"
+            }
+        >
             <div className="flex items-center gap-2">
                 <span
                     className={`h-3 w-3 rounded-full ${DOT[verdict.confidence]}`}
