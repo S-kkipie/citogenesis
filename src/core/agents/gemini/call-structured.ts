@@ -1,4 +1,4 @@
-import type { ContentListUnion, GoogleGenAI } from "@google/genai";
+import type { Content, ContentListUnion, GoogleGenAI } from "@google/genai";
 import type { z } from "zod";
 import type { AgentName, TraceEmit } from "@/core/run/domain";
 import { getGenAI } from "./client";
@@ -117,8 +117,22 @@ export async function callStructured<T>(
                     summary: `${label}: schema retry`,
                     data: { lastError },
                 });
+                // Preserve the ORIGINAL contents on retry instead of
+                // stringifying them. `contents` is a plain string for
+                // PrimacyJudge/WriteVerdict, but DriftAuditor passes a full
+                // `Content` object built by `createUserContent([...])`
+                // (which can carry a PDF file part). `String(contentObject)`
+                // collapses that to the literal text "[object Object]",
+                // silently dropping the claim + PDF from the repair turn.
+                // Within this codebase `contents` is always one of those two
+                // shapes (never a `Content[]`/`Part[]` array), so this cast
+                // is safe — mirrors the narrowing note on `CallDeps` above.
+                const firstTurn: Content =
+                    typeof contents === "string"
+                        ? { role: "user", parts: [{ text: contents }] }
+                        : (contents as Content);
                 contentsToSend = [
-                    { role: "user", parts: [{ text: String(contents) }] },
+                    firstTurn,
                     { role: "model", parts: [{ text: raw }] },
                     {
                         role: "user",
