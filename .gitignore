@@ -1,24 +1,28 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-env/
-*.egg-info/
-.pytest_cache/
+# deps
+node_modules
+.pnpm-store
 
-# Env / secrets
+# next
+.next
+out
+next-env.d.ts
+
+# build / cache
+.turbo
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# env / secrets
 .env
-.env.*
+.env*.local
 !.env.example
 
-# Node / frontend
-node_modules/
-dist/
-.next/
+# drizzle
+drizzle/**/*.sql.bak
 
-# Data / traces
-*.log
-runs/
-cache/
+# os / editor
 .DS_Store
+*.log
+
+# SDD / port scratch (agents)
+.superpowers/
