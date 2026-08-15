@@ -127,6 +127,18 @@ export function RunDashboard({
                         >
                             Replay
                         </button>
+                        {state?.claim && (
+                            <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-24">
+                                <div className="max-w-3xl rounded border border-[var(--au-canvas-rule)] bg-[var(--au-canvas)]/90 px-5 py-2 text-center shadow-sm">
+                                    <p className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--au-canvas-ink)]/60 uppercase tracking-widest">
+                                        auditing {state.input.kind}
+                                    </p>
+                                    <p className="line-clamp-2 font-[family-name:var(--font-display)] font-semibold text-[var(--au-canvas-ink)] text-lg leading-snug">
+                                        “{state.claim}”
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </>
                 ) : running ? (
                     <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-[var(--au-canvas-ink)]/70">
