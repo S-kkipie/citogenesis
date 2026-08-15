@@ -1,15 +1,14 @@
 import { notFound } from "next/navigation";
 import { sampleRecord } from "@/core/run/client/fixtures/sample-run";
-import { type RunRecord, runRecordSchema } from "@/core/run/domain";
+import type { RunState } from "@/core/run/domain";
 import { RunDashboard } from "../../audit/_components/RunDashboard";
 
 /**
  * Shareable, read-only permalink for a completed run. `sample-run` is a
  * fixed demo id that renders a bundled fixture (no DB round-trip, no env
- * access); any other id is fetched from the API via a plain `fetch` (not
- * the Eden treaty client — that module evaluates `createEdenTanStackQuery`
- * at module scope, which needs a React context the RSC server runtime
- * doesn't provide) and 404s if it doesn't resolve to a persisted run.
+ * access); any other id is read straight from Postgres — this is a server
+ * component, so going back out over HTTP to our own API would only add a
+ * round trip and a base-URL to get wrong. 404s when the id doesn't resolve.
  */
 export default async function RunPage({
     params,
@@ -22,21 +21,25 @@ export default async function RunPage({
         return <RunDashboard state={sampleRecord.state} mode="replay" />;
     }
 
-    // Import env-dependent config lazily so the sample path stays env-free.
-    const { ClientConfig } = await import("@/config/client-config");
+    // Imported lazily so the sample path needs no database and no env.
+    const [{ eq }, { db }, { runs }] = await Promise.all([
+        import("drizzle-orm"),
+        import("@/server/drizzle/db"),
+        import("@/server/drizzle/schemas"),
+    ]);
 
-    let record: RunRecord | null = null;
+    let state: RunState | null = null;
     try {
-        const res = await fetch(`${ClientConfig.baseUrl}/api/v1/runs/${id}`, {
-            cache: "no-store",
-        });
-        if (res.ok) {
-            record = runRecordSchema.parse(await res.json());
-        }
+        const [row] = await db
+            .select({ state: runs.state })
+            .from(runs)
+            .where(eq(runs.id, id))
+            .limit(1);
+        state = row?.state ?? null;
     } catch {
-        record = null;
+        state = null;
     }
 
-    if (!record) notFound();
-    return <RunDashboard state={record.state} mode="replay" />;
+    if (!state) notFound();
+    return <RunDashboard state={state} mode="replay" />;
 }
