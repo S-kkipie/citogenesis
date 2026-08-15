@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CitationGraph, CitationNode } from "@/core/run/domain";
+import type {
+    CitationGraph,
+    CitationNode,
+    DeltaEvent,
+} from "@/core/run/domain";
 
 // `judge-primacy.ts` imports `callStructured`, which imports the Gemini
 // client singleton, which reads `ServerConfig` (validated env) at
@@ -238,5 +242,37 @@ describe("judgePrimacy", () => {
         expect(call).toHaveBeenCalledTimes(2);
         expect(nodes.every((n) => n.primacy?.method === "llm")).toBe(true);
         expect(nodes.every((n) => n.primacy?.label === "primary")).toBe(true);
+    });
+
+    it("streams nodes-patch batches and origins as deltas", async () => {
+        const deltas: DeltaEvent[] = [];
+        const judge = makeJudgePrimacy(async () => ({
+            data: {
+                results: [
+                    { id: "W2", label: "primary", rationale: "has data" },
+                ],
+            },
+            usage: { prompt: 0, output: 0, total: 0 },
+            latencyMs: 1,
+        }));
+        // W1 heuristically labelable (review → secondary), W2 ambiguous → LLM
+        const graph = {
+            nodes: [node("W1", "review"), node("W2", "article")],
+            edges: [{ from: "W1", to: "W2" }],
+            truncated: false,
+        };
+        const result = await judge(
+            graph,
+            () => {},
+            (e) => deltas.push(e),
+        );
+
+        const patches = deltas
+            .filter((d) => d.type === "nodes-patch")
+            .flatMap((d) => d.patches);
+        // every resolved node's label was streamed exactly once
+        expect(patches.map((p) => p.id).sort()).toEqual(["W1", "W2"]);
+        const origins = deltas.find((d) => d.type === "origins");
+        expect(origins?.ids).toEqual(result.originCandidates);
     });
 });

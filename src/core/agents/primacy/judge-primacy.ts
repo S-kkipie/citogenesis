@@ -16,7 +16,7 @@ type CallStructuredFn = (opts: any) => Promise<CallResult<any>>;
 const BATCH = 50;
 
 export function makeJudgePrimacy(call: CallStructuredFn): JudgePrimacy {
-    return async (graph, emit) => {
+    return async (graph, emit, emitDelta) => {
         emit({
             agent: "primacy-judge",
             phase: "start",
@@ -43,6 +43,20 @@ export function makeJudgePrimacy(call: CallStructuredFn): JudgePrimacy {
             phase: "progress",
             summary: `${graph.nodes.length - ambiguous.length} heuristic, ${ambiguous.length} to LLM`,
         });
+
+        const patchesFor = (ns: CitationNode[]) =>
+            ns.flatMap((n) =>
+                n.primacy ? [{ id: n.id, primacy: n.primacy }] : [],
+            );
+
+        const heuristicPatches = patchesFor(
+            graph.nodes
+                .map((n) => out.get(n.id))
+                .filter((n) => n !== undefined),
+        );
+        if (heuristicPatches.length > 0) {
+            emitDelta?.({ type: "nodes-patch", patches: heuristicPatches });
+        }
 
         for (let i = 0; i < ambiguous.length; i += BATCH) {
             const batch = ambiguous.slice(i, i + BATCH);
@@ -133,10 +147,17 @@ export function makeJudgePrimacy(call: CallStructuredFn): JudgePrimacy {
                     summary: `batch ${i / BATCH + 1} failed → unknown`,
                 });
             }
+            const batchPatches = patchesFor(
+                batch.map((n) => out.get(n.id)).filter((n) => n !== undefined),
+            );
+            if (batchPatches.length > 0) {
+                emitDelta?.({ type: "nodes-patch", patches: batchPatches });
+            }
         }
 
         const nodes = graph.nodes.map((n) => out.get(n.id) ?? n);
         const originCandidates = selectOrigins({ ...graph, nodes });
+        emitDelta?.({ type: "origins", ids: originCandidates });
         emit({
             agent: "primacy-judge",
             phase: "handoff",
