@@ -15,7 +15,7 @@ export function makeAuditDrift(
     call: CallStructuredFn,
     resolve: ResolveFn,
 ): AuditDrift {
-    return async (claim, origins, emit) => {
+    return async (claim, origins, emit, emitDelta) => {
         emit({
             agent: "drift-auditor",
             phase: "start",
@@ -57,13 +57,15 @@ export function makeAuditDrift(
                     emit,
                     label: `drift ${origin.id}`,
                 });
-                findings.push({
+                const finding: DriftFinding = {
                     workId: origin.id,
                     label: data.label,
                     evidenceQuote: data.evidenceQuote,
                     explanation: data.explanation,
                     basis: content.basis,
-                });
+                };
+                findings.push(finding);
+                emitDelta?.({ type: "drift-finding", finding });
                 emit({
                     agent: "drift-auditor",
                     phase: "progress",

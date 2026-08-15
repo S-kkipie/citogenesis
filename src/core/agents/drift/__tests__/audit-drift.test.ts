@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CitationNode } from "@/core/run/domain";
+import type { CitationNode, DeltaEvent } from "@/core/run/domain";
 
 // `audit-drift.ts` imports `callStructured`, which imports the Gemini client
 // singleton reading `ServerConfig` (validated env) at module-load time. The
@@ -99,5 +99,29 @@ describe("auditDrift", () => {
         );
         expect(findings).toHaveLength(1);
         expect(errors.length).toBe(1);
+    });
+
+    it("streams each finding as a drift-finding delta", async () => {
+        const deltas: DeltaEvent[] = [];
+        const audit = makeAuditDrift(
+            async () => ({
+                data: {
+                    label: "drifted",
+                    evidenceQuote: "in mice only",
+                    explanation: "generalized beyond the model organism",
+                },
+                usage: { prompt: 0, output: 0, total: 0 },
+                latencyMs: 1,
+            }),
+            async () => ({ text: "abstract text", basis: "abstract" as const }),
+        );
+        const { findings } = await audit(
+            "claim",
+            [node("W9")],
+            () => {},
+            (e) => deltas.push(e),
+        );
+        const streamed = deltas.filter((d) => d.type === "drift-finding");
+        expect(streamed.map((d) => d.finding)).toEqual(findings);
     });
 });
