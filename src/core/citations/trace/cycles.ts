@@ -43,5 +43,10 @@ export function findCycles(graph: CitationGraph): WorkId[][] {
   };
 
   for (const n of graph.nodes) if (!idx.has(n.id)) strongconnect(n.id);
-  return sccs;
+
+  const canonicalized = sccs
+    .map((component) => [...component].sort((a, b) => a.localeCompare(b)))
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+  return canonicalized;
 }

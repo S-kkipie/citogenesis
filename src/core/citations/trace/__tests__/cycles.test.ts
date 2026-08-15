@@ -16,7 +16,16 @@ describe("findCycles", () => {
   it("finds an A->B->C->A cycle", () => {
     const cycles = findCycles(g(["A", "B", "C"], [["A", "B"], ["B", "C"], ["C", "A"]]));
     expect(cycles).toHaveLength(1);
-    expect([...cycles[0]].sort()).toEqual(["A", "B", "C"]);
+    expect(cycles[0]).toEqual(["A", "B", "C"]);
+  });
+
+  it("returns deterministic SCC order regardless of node/edge order", () => {
+    const canonical = [["A", "B", "C"]] as const;
+    expect(
+      findCycles(
+        g(["C", "A", "B"], [["B", "A"], ["C", "A"], ["A", "B"], ["B", "C"]]),
+      ),
+    ).toEqual(canonical);
   });
 
   it("returns no cycles for a DAG", () => {
