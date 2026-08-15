@@ -1,3 +1,4 @@
+import type { DeltaEmit } from "../../run/domain/delta";
 import type { WorkId } from "../../run/domain/graph";
 import type { RunError, RunInput } from "../../run/domain/state";
 import type { TraceEmit } from "../../run/domain/trace";
@@ -25,6 +26,7 @@ export async function resolveInputWith(
     emit: TraceEmit,
     opts: OpenAlexOpts,
     deps: Partial<ResolveDeps> = {},
+    emitDelta?: DeltaEmit,
 ): Promise<{ claim: string; anchors: WorkId[]; errors: RunError[] }> {
     const d = { ...DEFAULTS, ...deps };
     emit({
@@ -89,6 +91,7 @@ export async function resolveInputWith(
         }
     }
 
+    emitDelta?.({ type: "claim-resolved", claim, anchors });
     emit({
         agent: "input-adapter",
         phase: "handoff",

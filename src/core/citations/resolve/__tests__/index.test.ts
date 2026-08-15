@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import type { DeltaEvent } from "../../../run/domain/delta";
 import type { RunInput } from "../../../run/domain/state";
+import type { ResolveDeps } from "../index";
 import { resolveInputWith } from "../index";
 
 describe("resolveInputWith", () => {
@@ -68,5 +70,28 @@ describe("resolveInputWith", () => {
                 { resolvePaper },
             ),
         ).rejects.toThrow();
+    });
+
+    it("emits a claim-resolved delta before handing off", async () => {
+        const deltas: DeltaEvent[] = [];
+        await resolveInputWith(
+            { kind: "claim", text: "spinach is rich in iron" },
+            () => {},
+            {},
+            {
+                resolveClaim: (async () => ({
+                    anchors: ["W1"],
+                    errors: [],
+                })) as ResolveDeps["resolveClaim"],
+            },
+            (e) => deltas.push(e),
+        );
+        expect(deltas).toEqual([
+            {
+                type: "claim-resolved",
+                claim: "spinach is rich in iron",
+                anchors: ["W1"],
+            },
+        ]);
     });
 });
