@@ -1,3 +1,4 @@
+import type { DeltaEmit } from "../../run/domain/delta";
 import type {
     CitationEdge,
     CitationGraph,
@@ -23,6 +24,7 @@ export async function traceChainWith(
     budget: TraceBudgetInput,
     emit: TraceEmit,
     fetchWorks: FetchWorksFn,
+    emitDelta?: DeltaEmit,
 ): Promise<{ graph: CitationGraph; cycles: WorkId[][]; errors: RunError[] }> {
     emit({
         agent: "chain-tracer",
@@ -95,6 +97,13 @@ export async function traceChainWith(
     await fetchMeta(anchors);
     for (const a of anchors) commit(a, 0);
 
+    const anchorNodes = anchors
+        .map((a) => nodes.get(a))
+        .filter((n) => n !== undefined);
+    if (anchorNodes.length > 0) {
+        emitDelta?.({ type: "graph-delta", nodes: anchorNodes, edges: [] });
+    }
+
     const claimTopics = new Set<string>();
     for (const a of anchors) {
         // biome-ignore lint/suspicious/useIterableCallbackReturn: Set.add mutates the accumulator; its returned set is intentionally ignored.
@@ -131,15 +140,28 @@ export async function traceChainWith(
                 });
             }
 
+            const batchNodes: CitationNode[] = [];
+            const batchEdges: CitationEdge[] = [];
             for (const child of kept) {
                 if (!nodes.has(child.id) && nodes.size >= budget.maxNodes) {
                     truncated = true;
                     continue;
                 }
-                edges.push({ from: parentId, to: child.id });
+                const edge = { from: parentId, to: child.id };
+                edges.push(edge);
+                batchEdges.push(edge);
                 if (nodes.has(child.id)) continue;
                 commit(child.id, depth + 1);
+                const committed = nodes.get(child.id);
+                if (committed) batchNodes.push(committed);
                 if (fetched.has(child.id)) next.push(child.id);
+            }
+            if (batchNodes.length > 0 || batchEdges.length > 0) {
+                emitDelta?.({
+                    type: "graph-delta",
+                    nodes: batchNodes,
+                    edges: batchEdges,
+                });
             }
 
             if (nodes.size >= budget.maxNodes) {
@@ -162,6 +184,9 @@ export async function traceChainWith(
         truncated,
     };
     const cycles = findCycles(graph);
+    if (cycles.length > 0) {
+        emitDelta?.({ type: "cycles", cycles });
+    }
     emit({
         agent: "chain-tracer",
         phase: "done",

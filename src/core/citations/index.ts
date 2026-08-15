@@ -14,7 +14,12 @@ export const traceChain = ((
     anchors: Parameters<TraceChain>[0],
     budget: TraceBudgetInput,
     emit: Parameters<TraceChain>[2],
+    emitDelta?: Parameters<TraceChain>[3],
 ) =>
-    traceChainWith(anchors, budget, emit, (ids) =>
-        getWorks(ids, liveOpts),
+    traceChainWith(
+        anchors,
+        budget,
+        emit,
+        (ids) => getWorks(ids, liveOpts),
+        emitDelta,
     )) satisfies TraceChain;
