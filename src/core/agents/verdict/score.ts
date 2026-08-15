@@ -16,6 +16,7 @@ const DRIFT_PENALTY = {
     supported: 0,
     "partially-supported": 20,
     drifted: 40,
+    // contradicted always trips the gate above; this weight is never read.
     contradicted: 0,
 } as const;
 

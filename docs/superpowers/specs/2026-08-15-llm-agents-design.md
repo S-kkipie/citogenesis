@@ -219,7 +219,7 @@ Pathogens (all that apply, in `Pathogen[]`):
 **Hybrid scoring** (starting weights — pure fn, exhaustive tests, easy to tune):
 
 ```
-GATES → LOW, score = min(computed, 20):
+GATES → LOW, score = 20 (flat):
   any finding 'contradicted'  |  any origin isRetracted
   |  circular-support         |  no-primary-source
 
