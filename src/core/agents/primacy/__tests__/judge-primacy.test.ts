@@ -116,7 +116,7 @@ describe("judgePrimacy", () => {
         expect(errors.length).toBeGreaterThan(0);
     });
 
-    it("ignores a result id that belongs to another node, not the current batch", async () => {
+    it("ignores a result id that belongs to another node, not the current batch, and records a recovered error", async () => {
         const call = vi.fn(async () => ({
             data: {
                 results: [
@@ -133,7 +133,7 @@ describe("judgePrimacy", () => {
             edges: [],
             truncated: false,
         };
-        const { nodes } = await judge(graph, emit);
+        const { nodes, errors } = await judge(graph, emit);
         expect(nodes.find((n) => n.id === "W_A")?.primacy).toMatchObject({
             label: "primary",
             method: "llm",
@@ -142,5 +142,101 @@ describe("judgePrimacy", () => {
             label: "secondary",
             method: "heuristic",
         });
+        expect(
+            errors.some(
+                (e) => e.recovered && e.message.includes("out-of-batch"),
+            ),
+        ).toBe(true);
+    });
+
+    it("marks a duplicated in-batch id as unknown and records a recovered error", async () => {
+        const call = vi.fn(async () => ({
+            data: {
+                results: [
+                    { id: "W6", label: "primary", rationale: "first" },
+                    { id: "W6", label: "secondary", rationale: "second" },
+                ],
+            },
+            usage: { prompt: 0, output: 0, total: 0 },
+            latencyMs: 1,
+        }));
+        const judge = makeJudgePrimacy(call as never);
+        const graph: CitationGraph = {
+            nodes: [node("W6", "article")],
+            edges: [],
+            truncated: false,
+        };
+        const { nodes, errors } = await judge(graph, emit);
+        expect(nodes[0].primacy).toMatchObject({
+            label: "unknown",
+            method: "llm",
+        });
+        expect(
+            errors.some(
+                (e) => e.recovered && e.message.includes("missing/duplicated"),
+            ),
+        ).toBe(true);
+    });
+
+    it("records a recovered error for an out-of-batch id that matches no graph node", async () => {
+        const call = vi.fn(async () => ({
+            data: {
+                results: [
+                    { id: "W7", label: "primary", rationale: "orig data" },
+                    { id: "W999", label: "primary", rationale: "unrelated" },
+                ],
+            },
+            usage: { prompt: 0, output: 0, total: 0 },
+            latencyMs: 1,
+        }));
+        const judge = makeJudgePrimacy(call as never);
+        const graph: CitationGraph = {
+            nodes: [node("W7", "article")],
+            edges: [],
+            truncated: false,
+        };
+        const { nodes, errors } = await judge(graph, emit);
+        expect(nodes[0].primacy).toMatchObject({
+            label: "primary",
+            method: "llm",
+        });
+        expect(nodes.some((n) => n.id === "W999")).toBe(false);
+        expect(
+            errors.some(
+                (e) => e.recovered && e.message.includes("out-of-batch"),
+            ),
+        ).toBe(true);
+    });
+
+    it("splits more than 50 ambiguous nodes across multiple LLM batches", async () => {
+        const call = vi.fn(async (opts: { contents: string }) => {
+            const ids = [...opts.contents.matchAll(/"id":\s*"(W\d+)"/g)].map(
+                (m) => m[1],
+            );
+            return {
+                data: {
+                    results: ids.map((id) => ({
+                        id,
+                        label: "primary" as const,
+                        rationale: "ok",
+                    })),
+                },
+                usage: { prompt: 0, output: 0, total: 0 },
+                latencyMs: 1,
+            };
+        });
+        const judge = makeJudgePrimacy(call as never);
+        const nodes51 = Array.from({ length: 51 }, (_, i) =>
+            node(`W${100 + i}`, "article"),
+        );
+        const graph: CitationGraph = {
+            nodes: nodes51,
+            edges: [],
+            truncated: false,
+        };
+        const { nodes } = await judge(graph, emit);
+        expect(call).toHaveBeenCalledTimes(2);
+        expect(nodes.every((n) => n.primacy?.method === "llm")).toBe(true);
+        expect(nodes.every((n) => n.primacy?.label === "primary")).toBe(true);
     });
 });

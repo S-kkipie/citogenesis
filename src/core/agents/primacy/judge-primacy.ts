@@ -58,8 +58,27 @@ export function makeJudgePrimacy(call: CallStructuredFn): JudgePrimacy {
                 });
                 const seen = new Set<string>();
                 const batchIds = new Set(batch.map((n) => n.id));
+                // Count in-batch occurrences per id first, so a duplicated
+                // id can be recognized and skipped in the apply pass below
+                // (rather than silently taking whichever result came last).
+                const counts = new Map<string, number>();
                 for (const r of data.results) {
-                    if (!batchIds.has(r.id)) continue; // ignore hallucinated / cross-batch ids
+                    if (batchIds.has(r.id))
+                        counts.set(r.id, (counts.get(r.id) ?? 0) + 1);
+                }
+                for (const r of data.results) {
+                    if (!batchIds.has(r.id)) {
+                        // Hallucinated or cross-batch id: never silently
+                        // dropped — every anomaly leaves a trace.
+                        errors.push(
+                            recoveredError(
+                                "primacy-judge",
+                                `LLM returned out-of-batch id ${r.id}`,
+                            ),
+                        );
+                        continue;
+                    }
+                    if ((counts.get(r.id) ?? 0) > 1) continue; // duplicate → left unlabeled, caught below
                     const node = out.get(r.id);
                     if (node) {
                         out.set(r.id, {
@@ -80,13 +99,14 @@ export function makeJudgePrimacy(call: CallStructuredFn): JudgePrimacy {
                             primacy: {
                                 label: "unknown",
                                 method: "llm",
-                                rationale: "missing from batch response",
+                                rationale:
+                                    "missing or duplicated in batch response",
                             },
                         });
                         errors.push(
                             recoveredError(
                                 "primacy-judge",
-                                `node ${n.id} missing from LLM batch`,
+                                `node ${n.id} missing/duplicated in LLM batch`,
                             ),
                         );
                     }
