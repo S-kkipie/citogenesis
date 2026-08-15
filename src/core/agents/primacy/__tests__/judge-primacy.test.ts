@@ -115,4 +115,32 @@ describe("judgePrimacy", () => {
         expect(nodes[0].primacy?.label).toBe("unknown");
         expect(errors.length).toBeGreaterThan(0);
     });
+
+    it("ignores a result id that belongs to another node, not the current batch", async () => {
+        const call = vi.fn(async () => ({
+            data: {
+                results: [
+                    { id: "W_A", label: "primary", rationale: "orig data" },
+                    { id: "W_B", label: "primary", rationale: "hallucinated" },
+                ],
+            },
+            usage: { prompt: 0, output: 0, total: 0 },
+            latencyMs: 1,
+        }));
+        const judge = makeJudgePrimacy(call as never);
+        const graph: CitationGraph = {
+            nodes: [node("W_A", "article"), node("W_B", "review")],
+            edges: [],
+            truncated: false,
+        };
+        const { nodes } = await judge(graph, emit);
+        expect(nodes.find((n) => n.id === "W_A")?.primacy).toMatchObject({
+            label: "primary",
+            method: "llm",
+        });
+        expect(nodes.find((n) => n.id === "W_B")?.primacy).toMatchObject({
+            label: "secondary",
+            method: "heuristic",
+        });
+    });
 });

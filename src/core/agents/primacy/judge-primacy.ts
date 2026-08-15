@@ -57,7 +57,9 @@ export function makeJudgePrimacy(call: CallStructuredFn): JudgePrimacy {
                     label: `primacy batch ${i / BATCH + 1}`,
                 });
                 const seen = new Set<string>();
+                const batchIds = new Set(batch.map((n) => n.id));
                 for (const r of data.results) {
+                    if (!batchIds.has(r.id)) continue; // ignore hallucinated / cross-batch ids
                     const node = out.get(r.id);
                     if (node) {
                         out.set(r.id, {
