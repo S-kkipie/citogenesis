@@ -9,4 +9,6 @@ export const runs = pgTable("runs", {
     status: text().$type<RunStatus>().notNull(),
     /** Full serialized RunState (may be partial while status = running). */
     state: jsonb().$type<RunState>().notNull(),
+    /** Canonical key of state.input; null on rows from before dedupe. */
+    inputKey: text(),
 });
