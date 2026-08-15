@@ -1,21 +1,13 @@
 import Link from "next/link";
-import type { RunState, RunStatus, Verdict } from "@/core/run/domain";
+import type { RunStatus } from "@/core/run/domain";
 
 /**
  * Server component: reads the last 50 runs directly from Postgres (same
- * query as GET /api/v1/runs) rather than fetching our own API — see
- * `[id]/page.tsx` for why. Drizzle is imported lazily so the module needs
- * no env access until this page actually renders.
+ * narrowed query used by GET /api/v1/runs, via the shared `listRuns`
+ * helper) rather than fetching our own API — see `[id]/page.tsx` for why.
+ * The helper is imported lazily so this module needs no env access until
+ * the page actually renders.
  */
-
-type RunRow = {
-    id: string;
-    createdAt: string;
-    status: RunStatus;
-    kind: RunState["input"]["kind"];
-    claim: string | null;
-    verdict: Pick<Verdict, "confidence" | "score"> | null;
-};
 
 const STATUS_COLOR: Record<RunStatus, string> = {
     done: "text-[var(--au-healthy)]",
@@ -33,31 +25,15 @@ function formatDate(iso: string) {
 export default async function RunsPage() {
     // Imported lazily so this module needs no database and no env until
     // the page actually renders.
-    const [{ desc }, { db }, { runs }] = await Promise.all([
-        import("drizzle-orm"),
-        import("@/server/drizzle/db"),
-        import("@/server/drizzle/schemas"),
-    ]);
+    const { listRuns } = await import("@/core/run/server/list-runs");
 
-    const rows = await db
-        .select()
-        .from(runs)
-        .orderBy(desc(runs.createdAt))
-        .limit(50);
-
-    const history: RunRow[] = rows.map((row) => ({
-        id: row.id,
-        createdAt: row.createdAt,
-        status: row.status,
-        kind: row.state.input.kind,
-        claim: row.state.claim || null,
-        verdict: row.state.verdict
-            ? {
-                  confidence: row.state.verdict.confidence,
-                  score: row.state.verdict.score,
-              }
-            : null,
-    }));
+    let history: Awaited<ReturnType<typeof listRuns>> = [];
+    let loadFailed = false;
+    try {
+        history = await listRuns();
+    } catch {
+        loadFailed = true;
+    }
 
     return (
         <div className="p-6">
@@ -65,7 +41,11 @@ export default async function RunsPage() {
                 Run history
             </h1>
 
-            {history.length === 0 ? (
+            {loadFailed ? (
+                <p className="mt-16 text-center text-[var(--au-muted)] text-sm">
+                    Could not load run history.
+                </p>
+            ) : history.length === 0 ? (
                 <p className="mt-16 text-center text-[var(--au-muted)] text-sm">
                     No runs yet.
                 </p>
