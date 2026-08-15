@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: citogenesis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: citogenesis
+      POSTGRES_PASSWORD: citogenesis
+      POSTGRES_DB: citogenesis
+    ports:
+      - "5442:5432"
+    volumes:
+      - citogenesis-pgdata:/var/lib/postgresql/data
+
+volumes:
+  citogenesis-pgdata:

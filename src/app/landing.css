@@ -1,0 +1,330 @@
+/* Hallmark · genre: atmospheric · macrostructure: Map/Diagram · theme: Midnight-adjacent (custom-tuned)
+ * tone: technical-atmospheric · anchor hue: 250 · accent: infection amber (~3%)
+ * nav: N9 edge-aligned · footer: Ft5 statement · enrichment: E5 hand-built SVG + paper-shaders MeshGradient
+ * audience: researchers/academics · use: run an audit (→ /audit)
+ * Hallmark · pre-emit critique: P5 H4 E4 S5 R4 V5
+ * contrast: pass (40–41) · nav: N9 · footer: Ft5 · slop: pass (42–45)
+ * honest: pass (46) · chrome: pass (47) · tokens: pass (48; WebGL shader
+ * uniforms mirror tokens, documented in shader-bg.tsx) · responsive: pass (49)
+ * icons: pass (30) · mobile: pass (34, 49, 50–57)
+ * noted exceptions (user-directed): animated MeshGradient canvas (gate 29 —
+ * paper-shaders required by brief; slow speed, 0.85 opacity, frozen under
+ * prefers-reduced-motion) · mono as technical UI register beyond 2 slots
+ * (gate 38 — deliberate technical-genre voice, approved via mockup B)
+ */
+.landing {
+    --lp-paper: oklch(13% 0.012 250);
+    --lp-paper-2: oklch(17% 0.014 250);
+    --lp-rule: oklch(30% 0.012 250);
+    --lp-neutral: oklch(64% 0.01 250);
+    --lp-muted: oklch(76% 0.008 250);
+    --lp-ink: oklch(94% 0.006 250);
+    --lp-accent: oklch(72% 0.15 60);
+    --lp-focus: oklch(72% 0.19 60);
+    --lp-origin-fill: oklch(20% 0.06 60);
+    --lp-space-sm: 0.5rem;
+    --lp-space-md: 1rem;
+    --lp-space-lg: 2rem;
+    --lp-space-xl: 3.5rem;
+    --lp-space-2xl: 6rem;
+    --lp-text-display: clamp(2.5rem, 4.5vw + 1rem, 4.75rem);
+    --lp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --lp-dur-micro: 120ms;
+    --lp-dur-short: 220ms;
+    --lp-dur-long: 420ms;
+
+    background: var(--lp-paper);
+    color: var(--lp-ink);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 350;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    min-height: 100svh;
+    overflow-x: clip;
+}
+
+/* shader canvas sits behind everything */
+.lp-shader {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.85;
+}
+.landing > :not(.lp-shader) {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---- nav · N9 edge-aligned ---- */
+.lp-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--lp-space-md) var(--lp-space-lg);
+}
+.lp-wordmark {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 500;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    color: var(--lp-ink);
+    text-decoration: none;
+}
+.lp-nav nav {
+    display: flex;
+    gap: var(--lp-space-lg);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.8rem;
+}
+.lp-nav nav a {
+    color: var(--lp-neutral);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--lp-dur-micro) var(--lp-ease-out);
+}
+.lp-nav nav a:hover {
+    color: var(--lp-accent);
+}
+.lp-nav nav a:focus-visible,
+.lp-wordmark:focus-visible {
+    outline: 2px solid var(--lp-focus);
+    outline-offset: 3px;
+}
+
+/* ---- hero · map/diagram ---- */
+.lp-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: var(--lp-space-xl);
+    align-items: center;
+    padding: var(--lp-space-xl) var(--lp-space-lg) var(--lp-space-2xl);
+    max-width: 74rem;
+    margin: 0 auto;
+}
+.lp-hero h1 {
+    font-family: var(--font-display), ui-sans-serif, sans-serif;
+    font-weight: 500;
+    font-style: normal;
+    font-size: var(--lp-text-display);
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    margin: 0;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+.lp-sub {
+    color: var(--lp-neutral);
+    max-width: 46ch;
+    margin-top: var(--lp-space-lg);
+}
+.lp-actions {
+    margin-top: var(--lp-space-xl);
+    display: flex;
+    gap: var(--lp-space-lg);
+    align-items: center;
+    flex-wrap: wrap;
+}
+.lp-btn {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: var(--lp-ink);
+    border: 1px solid var(--lp-accent);
+    padding: 0.75rem 1.5rem;
+    white-space: nowrap;
+    transition:
+        background var(--lp-dur-micro) var(--lp-ease-out),
+        color var(--lp-dur-micro) var(--lp-ease-out);
+}
+.lp-btn:hover {
+    background: var(--lp-accent);
+    color: var(--lp-paper);
+}
+.lp-btn:active {
+    transform: translateY(1px);
+}
+.lp-btn:focus-visible {
+    outline: 2px solid var(--lp-focus);
+    outline-offset: 3px;
+}
+.lp-ghost {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.85rem;
+    color: var(--lp-neutral);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--lp-dur-micro) var(--lp-ease-out);
+}
+.lp-ghost:hover {
+    color: var(--lp-ink);
+}
+.lp-ghost:focus-visible {
+    outline: 2px solid var(--lp-focus);
+    outline-offset: 3px;
+}
+
+/* ---- citation graph (hand-built SVG) ---- */
+.lp-graph-wrap {
+    margin: 0;
+}
+.lp-graph {
+    width: 100%;
+    height: auto;
+}
+.lp-edges line {
+    stroke: var(--lp-rule);
+    stroke-width: 1;
+}
+.lp-edges .lp-edge--hot {
+    stroke: var(--lp-accent);
+    stroke-dasharray: 4 3;
+}
+.lp-nodes circle {
+    fill: var(--lp-paper-2);
+    stroke: var(--lp-neutral);
+    stroke-width: 1;
+    opacity: 0;
+    animation: lp-ink-on var(--lp-dur-long) var(--lp-ease-out) forwards;
+    animation-delay: calc(var(--i, 0) * 90ms);
+}
+.lp-nodes .lp-node--origin {
+    stroke: var(--lp-accent);
+    stroke-width: 2;
+    fill: var(--lp-origin-fill);
+}
+@keyframes lp-ink-on {
+    to {
+        opacity: 1;
+    }
+}
+.lp-graph-labels text {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 9px;
+    fill: var(--lp-neutral);
+}
+.lp-graph-labels .lp-lbl--origin {
+    fill: var(--lp-accent);
+}
+.lp-legend {
+    display: flex;
+    gap: var(--lp-space-lg);
+    flex-wrap: wrap;
+    margin-top: var(--lp-space-md);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--lp-neutral);
+}
+.lp-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.lp-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--lp-paper-2);
+    border: 1px solid var(--lp-neutral);
+    display: inline-block;
+}
+.lp-dot--origin {
+    border-color: var(--lp-accent);
+    background: var(--lp-origin-fill);
+}
+.lp-dash {
+    width: 16px;
+    height: 0;
+    border-top: 1px dashed var(--lp-accent);
+    display: inline-block;
+}
+
+/* ---- agents strip ---- */
+.lp-agents {
+    border-top: 1px solid var(--lp-rule);
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: var(--lp-space-xl) var(--lp-space-lg);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--lp-space-lg);
+}
+.lp-agent {
+    background: transparent;
+    padding: var(--lp-space-md);
+    transition: background var(--lp-dur-short) var(--lp-ease-out);
+}
+.lp-agent:hover {
+    background: var(--lp-paper-2);
+}
+.lp-agent h3 {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 500;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.5rem;
+    color: var(--lp-muted);
+}
+.lp-agent p {
+    font-size: 0.92rem;
+    color: var(--lp-neutral);
+    margin: 0;
+}
+.lp-agent .lp-arrow {
+    color: var(--lp-accent);
+    margin-left: 0.3rem;
+}
+
+/* ---- statement footer · Ft5 ---- */
+.lp-foot {
+    border-top: 1px solid var(--lp-rule);
+    padding: var(--lp-space-xl) var(--lp-space-lg) var(--lp-space-lg);
+    text-align: center;
+}
+.lp-foot .lp-statement {
+    font-family: var(--font-display), ui-sans-serif, sans-serif;
+    font-weight: 500;
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    margin: 0 0 var(--lp-space-lg);
+}
+.lp-foot small {
+    display: block;
+    margin-top: var(--lp-space-lg);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--lp-neutral);
+}
+.lp-foot small a {
+    color: inherit;
+}
+
+/* ---- responsive ---- */
+@media (max-width: 800px) {
+    .lp-hero {
+        grid-template-columns: minmax(0, 1fr);
+        padding-top: var(--lp-space-xl);
+    }
+    .lp-agents {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 480px) {
+    .lp-agents {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .lp-nav nav {
+        gap: var(--lp-space-md);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-nodes circle {
+        animation: lp-ink-on 150ms linear forwards;
+    }
+    .lp-agent,
+    .lp-btn,
+    .lp-ghost,
+    .lp-nav nav a {
+        transition-duration: 150ms;
+    }
+}
