@@ -34,3 +34,5 @@ drizzle/**/*.sql.bak
 .vercel
 .env*
 !docs/assets/*.png
+!src/app/icon.png
+!src/app/apple-icon.png
