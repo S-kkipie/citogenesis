@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+/** ISO-8601 instant that tolerates a revived `Date` and normalizes to string. */
+export const isoInstant = z
+    .union([z.iso.datetime(), z.date()])
+    .transform((v) => (typeof v === "string" ? v : v.toISOString()));
+
 export const agentNameSchema = z.enum([
     "input-adapter",
     "chain-tracer",
@@ -14,7 +19,13 @@ export type AgentName = z.infer<typeof agentNameSchema>;
  * recovery lands here — the trace IS the "auditable result" deliverable.
  */
 export const traceEventSchema = z.object({
-    ts: z.iso.datetime(),
+    /**
+     * ISO-8601 instant. Accepts a `Date` on input because Eden's client
+     * revives ISO strings in JSON/SSE payloads into `Date` objects — a
+     * string-only schema silently rejects every streamed trace event on the
+     * client. Output is always the normalized string.
+     */
+    ts: isoInstant,
     agent: agentNameSchema,
     phase: z.enum([
         "start",

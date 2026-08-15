@@ -51,12 +51,7 @@ export function useRunStream() {
                 return;
             }
 
-            let loggedFirstChunk = false;
             for await (const chunk of data) {
-                if (!loggedFirstChunk) {
-                    console.log("[useRunStream] first SSE chunk:", chunk);
-                    loggedFirstChunk = true;
-                }
                 const raw = unwrapChunk(chunk);
                 const parsed = runSseEventSchema.safeParse(raw);
                 if (!parsed.success) continue;
