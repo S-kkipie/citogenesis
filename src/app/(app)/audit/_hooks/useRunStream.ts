@@ -79,15 +79,31 @@ export function useRunStream() {
             return;
         }
 
-        // Full state (graph/drift/verdict) is fetched once the stream ends,
-        // rather than reconstructed from trace events alone.
-        if (runId) {
-            const res = await apiClient.api.v1.runs({ id: runId }).get();
-            if (res.data) {
-                setState(res.data.state);
-            }
+        // Reached only when the stream ended without a "failed" SSE event
+        // and without throwing — i.e. it just ran out of chunks. That's not
+        // proof of success on its own: the accepted event may never have
+        // arrived, the GET below can fail independently, or the record can
+        // simply not be "done" yet. The persisted record's `status` is the
+        // single authority for "done" — everything else here is "failed".
+        if (!runId) {
+            setStatus("failed");
+            return;
         }
-        setStatus("done");
+
+        try {
+            const res = await apiClient.api.v1.runs({ id: runId }).get();
+            const record = res.data;
+            if (res.error || !record?.state) {
+                setStatus("failed");
+                return;
+            }
+            setState(record.state);
+            setStatus(record.status === "done" ? "done" : "failed");
+        } catch {
+            // GET rejected (network/client error) — never let that surface
+            // as an unhandled rejection to the caller of start().
+            setStatus("failed");
+        }
     }, []);
 
     return { live, state, start, status };
