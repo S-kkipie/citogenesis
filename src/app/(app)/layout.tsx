@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PropsWithChildren } from "react";
 import "./audit/audit.css";
 
@@ -12,9 +13,20 @@ export default function AppLayout({ children }: PropsWithChildren) {
                     />
                     Citogenesis
                 </span>
-                <span className="font-[family-name:var(--font-body)] text-[var(--au-muted)] text-sm">
-                    Trace every claim to its root.
-                </span>
+                <nav className="flex items-center gap-4 font-[family-name:var(--font-body)] text-sm">
+                    <Link
+                        href="/audit"
+                        className="text-[var(--au-muted)] hover:text-[var(--au-ink)]"
+                    >
+                        Audit
+                    </Link>
+                    <Link
+                        href="/runs"
+                        className="text-[var(--au-muted)] hover:text-[var(--au-ink)]"
+                    >
+                        Runs
+                    </Link>
+                </nav>
             </header>
             <main>{children}</main>
         </div>

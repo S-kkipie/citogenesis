@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Elysia, sse } from "elysia";
 import { nanoid } from "nanoid";
 import type { RunSseEvent, RunState } from "@/core/run/domain";
@@ -82,6 +82,26 @@ export const runsRouter = new Elysia({ prefix: "/runs" })
         },
         { body: runInputSchema },
     )
+    .get("/", async () => {
+        const rows = await db
+            .select()
+            .from(runs)
+            .orderBy(desc(runs.createdAt))
+            .limit(50);
+        return rows.map((row) => ({
+            id: row.id,
+            createdAt: row.createdAt,
+            status: row.status,
+            kind: row.state.input.kind,
+            claim: row.state.claim || null,
+            verdict: row.state.verdict
+                ? {
+                      confidence: row.state.verdict.confidence,
+                      score: row.state.verdict.score,
+                  }
+                : null,
+        }));
+    })
     .get("/:id", async ({ params, status }) => {
         const [row] = await db
             .select()
