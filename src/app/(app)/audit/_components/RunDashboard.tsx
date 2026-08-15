@@ -96,6 +96,7 @@ export function RunDashboard({
                             key={revealKey}
                             view={view}
                             onNodeClick={setSelected}
+                            insetRight={state && selected ? 360 : 0}
                         />
                         <button
                             type="button"
