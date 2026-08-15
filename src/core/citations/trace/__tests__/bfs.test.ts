@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TRACE_BUDGET, type WorkId } from "../../../run/domain/graph";
+import { TRACE_BUDGET, type TraceBudget, type WorkId } from "../../../run/domain/graph";
 import type { FetchedWork } from "../../types";
 import { traceChainWith } from "../bfs";
 
@@ -65,6 +65,21 @@ describe("traceChainWith", () => {
     const { graph } = await traceChainWith(["W1"], TRACE_BUDGET, vi.fn(), f);
     // 1 anchor + 25 kept refs
     expect(graph.nodes).toHaveLength(26);
+    expect(graph.truncated).toBe(true);
+  });
+
+  it("never emits a dangling edge when the node budget is hit mid-parent", async () => {
+    const anchor = fw("W1", ["Wb0", "Wb1", "Wb2", "Wb3", "Wb4"]);
+    const db: Record<string, FetchedWork> = { W1: anchor };
+    for (let i = 0; i < 5; i++) db[`Wb${i}`] = fw(`Wb${i}`, [], ["T1"]);
+    const f = async (ids: WorkId[]) => {
+      const works = new Map<WorkId, FetchedWork>();
+      for (const id of ids) if (db[id]) works.set(id, db[id]);
+      return { works, missing: ids.filter((i) => !db[i]) };
+    };
+    const budget = { maxDepth: 1, maxRefsPerNode: 25, maxNodes: 2 } as unknown as TraceBudget;
+    const { graph } = await traceChainWith(["W1"], budget, vi.fn(), f);
+    expect(graph.edges.every((e) => graph.nodes.some((n) => n.id === e.to))).toBe(true);
     expect(graph.truncated).toBe(true);
   });
 });

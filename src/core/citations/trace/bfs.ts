@@ -91,12 +91,12 @@ export async function traceChainWith(
       }
 
       for (const child of kept) {
-        edges.push({ from: parentId, to: child.id });
-        if (nodes.has(child.id)) continue;
-        if (nodes.size >= budget.maxNodes) {
+        if (!nodes.has(child.id) && nodes.size >= budget.maxNodes) {
           truncated = true;
           continue;
         }
+        edges.push({ from: parentId, to: child.id });
+        if (nodes.has(child.id)) continue;
         commit(child.id, depth + 1);
         if (fetched.has(child.id)) next.push(child.id);
       }
