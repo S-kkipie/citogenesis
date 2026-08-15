@@ -8,6 +8,7 @@ import {
 import {
     AGENT_ORDER,
     type AgentStatus,
+    initialLiveView,
     type LiveView,
 } from "@/core/run/client/stream";
 import type { AgentName, RunState } from "@/core/run/domain";
@@ -27,7 +28,7 @@ const NODE_REVEAL_DURATION_MS = 420;
 export function RunDashboard({
     state,
     live,
-    mode: _mode,
+    mode,
 }: {
     state: RunState | null;
     live?: LiveView;
@@ -35,11 +36,13 @@ export function RunDashboard({
 }) {
     const [selected, setSelected] = useState<string | null>(null);
     const [revealKey, setRevealKey] = useState(0);
-    const displayAgents =
+    const displayAgents: Record<AgentName, AgentStatus> =
         live?.agents ??
-        (Object.fromEntries(
-            AGENT_ORDER.map((a) => [a, "done" as const]),
-        ) as Record<AgentName, AgentStatus>);
+        (mode === "replay"
+            ? (Object.fromEntries(
+                  AGENT_ORDER.map((a) => [a, "done" as const]),
+              ) as Record<AgentName, AgentStatus>)
+            : initialLiveView().agents);
 
     const view = useMemo(
         () => (state ? deriveGraphView(state) : null),
@@ -69,6 +72,14 @@ export function RunDashboard({
     return (
         <div className="audit-scope grid h-[calc(100svh-3.5rem)] grid-cols-[1fr_360px] bg-[var(--au-paper)] font-[family-name:var(--font-body)] text-[var(--au-ink)]">
             <section className="relative border-[var(--au-rule)] border-r bg-[var(--au-canvas)]">
+                {live?.terminal === "failed" && (
+                    <div
+                        role="alert"
+                        className="absolute top-0 right-0 left-0 z-20 border-[var(--au-flag)] border-b bg-[var(--au-paper-2)] px-4 py-2 font-[family-name:var(--font-mono)] text-[var(--au-flag)] text-xs"
+                    >
+                        {live.failureMessage || "Run failed."}
+                    </div>
+                )}
                 {view ? (
                     <>
                         <CitationGraph
