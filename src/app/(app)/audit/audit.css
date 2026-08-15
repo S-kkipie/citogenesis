@@ -1,0 +1,28 @@
+/* Citogenesis · hybrid theme: dark chrome + light graph canvas.
+ * Mirrors the landing's --lp- palette (hue 250, amber accent ~60) so the
+ * landing → /audit transition reads as one coherent system. Scoped to
+ * `.audit-scope` so it never leaks into the rest of the (app) route group.
+ */
+.audit-scope {
+    --au-paper: oklch(13% 0.012 250);
+    --au-paper-2: oklch(17% 0.014 250);
+    --au-panel: oklch(
+        21% 0.016 250
+    ); /* slightly lighter than --au-paper-2, for nested surfaces (quote boxes) */
+    --au-rule: oklch(30% 0.012 250);
+    --au-neutral: oklch(64% 0.01 250);
+    --au-muted: oklch(76% 0.008 250);
+    --au-ink: oklch(94% 0.006 250);
+    --au-accent: oklch(72% 0.15 60); /* amber */
+    --au-focus: oklch(72% 0.19 60);
+
+    /* light canvas */
+    --au-canvas: oklch(97% 0.008 250);
+    --au-canvas-ink: oklch(22% 0.02 250);
+    --au-canvas-rule: oklch(90% 0.01 250);
+
+    /* severity — chrome (dark-friendly) */
+    --au-flag: oklch(64% 0.2 25); /* red */
+    --au-caution: oklch(76% 0.14 70); /* amber-orange */
+    --au-healthy: oklch(68% 0.16 150); /* green */
+}
