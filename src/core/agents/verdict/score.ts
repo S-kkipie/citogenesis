@@ -42,7 +42,9 @@ export function scoreVerdict({
 }: ScoreArgs): ScoreResult {
     const nodes = graph.nodes;
     const byId = new Map(nodes.map((n) => [n.id, n] as const));
-    const labeled = nodes.filter((n) => n.primacy);
+    const labeled = nodes.filter(
+        (n) => n.primacy && n.primacy.label !== "unknown",
+    );
     const primary = labeled.filter((n) => n.primacy?.label === "primary");
     const primaryRatio = labeled.length ? primary.length / labeled.length : 0;
     const coverage = {
@@ -89,10 +91,9 @@ export function scoreVerdict({
         anyContradicted || anyRetracted || cycles.length > 0 || noPrimaryOrigin;
 
     if (gated) {
-        const penalty = (1 - primaryRatio) * 45 + (spof ? 25 : 0);
         return {
             confidence: "LOW",
-            score: clamp(Math.min(20, 100 - penalty)),
+            score: 20,
             pathogens,
             primaryRatio,
             coverage,
