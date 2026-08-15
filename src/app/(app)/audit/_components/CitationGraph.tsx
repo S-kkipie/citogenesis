@@ -4,15 +4,10 @@ import { Background, Controls, type Edge, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMemo } from "react";
 import type { GraphView } from "@/core/run/client/graph-view";
+import { radialLayout } from "../_lib/radial-layout";
 import { CitationFlowNode, type CitationRFNode } from "./CitationFlowNode";
 
 const nodeTypes = { citation: CitationFlowNode };
-
-/** Layout constants for the layered graph. */
-const ROWS_PER_COLUMN = 14;
-const COLUMN_WIDTH = 210;
-const ROW_HEIGHT = 90;
-const BAND_GAP = 110;
 
 export function CitationGraph({
     view,
@@ -22,42 +17,34 @@ export function CitationGraph({
     onNodeClick?: (id: string) => void;
 }) {
     const nodes = useMemo<CitationRFNode[]>(() => {
-        // A depth band can hold well over a hundred nodes at depth 2–3, so
-        // each band wraps into sub-columns instead of running as one tall
-        // strip. Bands are then laid left-to-right by depth, each starting
-        // where the previous one ended.
-        const countByDepth = new Map<number, number>();
-        for (const nv of view.nodes) {
-            const d = nv.node.depth;
-            countByDepth.set(d, (countByDepth.get(d) ?? 0) + 1);
+        const placed = radialLayout(view);
+        // In-degree stands in for how load-bearing a paper is: the more of
+        // this graph leans on it, the bigger it draws.
+        const inDegree = new Map<string, number>();
+        for (const ev of view.edges) {
+            inDegree.set(ev.edge.to, (inDegree.get(ev.edge.to) ?? 0) + 1);
         }
+        const maxIn = Math.max(1, ...inDegree.values());
 
-        const bandStart = new Map<number, number>();
-        let x = 0;
-        for (const d of [...countByDepth.keys()].sort((a, b) => a - b)) {
-            bandStart.set(d, x);
-            const subColumns = Math.ceil(
-                (countByDepth.get(d) ?? 0) / ROWS_PER_COLUMN,
-            );
-            x += subColumns * COLUMN_WIDTH + BAND_GAP;
-        }
-
-        const seenInDepth = new Map<number, number>();
         return view.nodes.map((nv) => {
-            const d = nv.node.depth;
-            const index = seenInDepth.get(d) ?? 0;
-            seenInDepth.set(d, index + 1);
-
+            const at = placed.get(nv.node.id);
+            const cited = inDegree.get(nv.node.id) ?? 0;
             return {
                 id: nv.node.id,
                 type: "citation",
-                position: {
-                    x:
-                        (bandStart.get(d) ?? 0) +
-                        Math.floor(index / ROWS_PER_COLUMN) * COLUMN_WIDTH,
-                    y: (index % ROWS_PER_COLUMN) * ROW_HEIGHT,
+                position: { x: at?.x ?? 0, y: at?.y ?? 0 },
+                data: {
+                    view: nv,
+                    weight: cited / maxIn,
+                    // 200 labels is noise. Name only the nodes the reader
+                    // needs: the origins, the diseased, and the hubs.
+                    showLabel:
+                        nv.isOrigin ||
+                        nv.inCycle ||
+                        nv.severity === "flagged" ||
+                        nv.node.depth === 0 ||
+                        cited >= Math.max(3, maxIn * 0.4),
                 },
-                data: { view: nv },
             };
         });
     }, [view]);
@@ -69,14 +56,20 @@ export function CitationGraph({
                 source: ev.edge.from,
                 target: ev.edge.to,
                 animated: ev.kind === "cycle",
+                // Straight lines: with a radial layout the edges are spokes,
+                // and bezier curves would smear that structure back into a
+                // mesh. Plain citations run faint so the flagged paths and
+                // cycles read on top of them.
+                type: "straight",
                 style: {
                     stroke: ev.kind === "cycle" ? "#CF222E" : "#57606A",
                     strokeWidth:
                         ev.kind === "cycle"
-                            ? 3
+                            ? 2.5
                             : ev.kind === "support-path"
-                              ? 2
-                              : 1,
+                              ? 1.75
+                              : 0.75,
+                    strokeOpacity: ev.kind === "citation" ? 0.28 : 0.9,
                 },
             })),
         [view],
@@ -89,6 +82,10 @@ export function CitationGraph({
                 edges={edges}
                 nodeTypes={nodeTypes}
                 fitView
+                // Breathing room, and room on the right for the drift panel
+                // that overlays this pane when an origin is selected.
+                fitViewOptions={{ padding: 0.18, maxZoom: 1 }}
+                minZoom={0.05}
                 onNodeClick={(_, node) => onNodeClick?.(node.id)}
                 proOptions={{ hideAttribution: true }}
             >

@@ -13,8 +13,18 @@ import {
 } from "@/core/run/client/stream";
 import type { AgentName, RunState } from "@/core/run/domain";
 import "../audit.css";
+import dynamic from "next/dynamic";
 import { AuditLog } from "./AuditLog";
-import { CitationGraph } from "./CitationGraph";
+
+// React Flow measures nodes in the DOM and writes full-precision transforms
+// the server can't reproduce, so server-rendering it trips a hydration
+// mismatch on every node. The graph is interactive-only anyway — render it
+// on the client.
+const CitationGraph = dynamic(
+    () => import("./CitationGraph").then((m) => m.CitationGraph),
+    { ssr: false },
+);
+
 import { DriftPanel } from "./DriftPanel";
 import { Legend } from "./Legend";
 import { PipelineBar } from "./PipelineBar";
