@@ -46,12 +46,56 @@ describe("uploadPdf", () => {
             headers: new Headers({ "content-type": "text/html" }),
             blob: async () => new Blob(),
         } as unknown as Response;
-        const { d } = deps(html);
+        const { d, upload } = deps(html);
         expect(await uploadPdf("http://x/landing", d as never)).toBeNull();
+        expect(upload).not.toHaveBeenCalled();
     });
 
     it("returns null when fetch throws", async () => {
         const { d } = deps(new Error("network"));
         expect(await uploadPdf("http://x/y.pdf", d as never)).toBeNull();
+    });
+
+    it("returns null for a blank/whitespace url without fetching", async () => {
+        const { d, upload } = deps(pdfResponse);
+        expect(await uploadPdf("   ", d as never)).toBeNull();
+        expect(d.fetch).not.toHaveBeenCalled();
+        expect(upload).not.toHaveBeenCalled();
+    });
+
+    it("returns null for a non-PDF content-type even when the url ends in .pdf", async () => {
+        const html = {
+            headers: new Headers({ "content-type": "text/html" }),
+            blob: async () => new Blob(),
+        } as unknown as Response;
+        const { d, upload } = deps(html);
+        expect(await uploadPdf("http://x/paper.pdf", d as never)).toBeNull();
+        expect(upload).not.toHaveBeenCalled();
+    });
+
+    it("falls back to the .pdf suffix when content-type is absent", async () => {
+        const noType = {
+            headers: new Headers({ "content-length": "1000" }),
+            blob: async () =>
+                new Blob([new Uint8Array(1000)], { type: "application/pdf" }),
+        } as unknown as Response;
+        const { d, upload } = deps(noType);
+        const part = await uploadPdf("http://x/y.pdf", d as never);
+        expect(upload).toHaveBeenCalledOnce();
+        expect(part).toMatchObject({ fileData: { fileUri: "files/x" } });
+    });
+
+    it("returns null when content-length exceeds 20MB", async () => {
+        const oversize = {
+            headers: new Headers({
+                "content-type": "application/pdf",
+                "content-length": String(20 * 1024 * 1024 + 1),
+            }),
+            blob: async () =>
+                new Blob([new Uint8Array(1)], { type: "application/pdf" }),
+        } as unknown as Response;
+        const { d, upload } = deps(oversize);
+        expect(await uploadPdf("http://x/y.pdf", d as never)).toBeNull();
+        expect(upload).not.toHaveBeenCalled();
     });
 });
