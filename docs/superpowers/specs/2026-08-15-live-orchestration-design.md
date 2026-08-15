@@ -61,6 +61,7 @@ off, and the graph growing live on the right.
 ```ts
 { type: "claim-resolved", claim: string, anchors: WorkId[] }      // input-adapter
 { type: "graph-delta", nodes: CitationNode[], edges: CitationEdge[] } // chain-tracer
+{ type: "cycles", cycles: WorkId[][] }                             // chain-tracer (end)
 { type: "nodes-patch", patches: { id: WorkId, primacy: Primacy }[] }  // primacy-judge
 { type: "origins", ids: WorkId[] }                                 // primacy-judge (end)
 { type: "drift-finding", finding: DriftFinding }                   // drift-auditor
@@ -73,8 +74,8 @@ clients (and the replay page) keep working.
 
 - `bfs.ts` (`traceChainWith`): after each parent expansion commits its batch,
   emit `graph-delta` with the newly committed nodes and new edges. Also one
-  delta for the anchors at depth 0. Cycles are computed at the end and reach
-  the client inside the tracer's `done` trace event data (already there).
+  delta for the anchors at depth 0. After `findCycles`, emit `cycles` when any
+  were found (the tracer's `done` trace data only carries counts, not paths).
 - `judge-primacy.ts`: emit `nodes-patch` per labeled batch; emit `origins`
   once selection is done.
 - `audit-drift.ts`: emit `drift-finding` after each origin audit completes.
@@ -147,8 +148,9 @@ Grid `[320px_1fr]`, full height under the input bar.
 - `runs/[id]` (mode `"replay"`): rail renders all agents done, stored trace in
   the feed; the existing depth-cascade reveal of the graph stays. No protocol
   change needed — replay never consumed SSE.
-- Agent error: its card turns red and shows the message; the existing top
-  banner stays.
+- Agent error: its card in the rail turns red and shows the failure message
+  (the rail is the single home for failure state; the old absolute banner
+  over the canvas is removed).
 - Dropped stream / no terminal event: unchanged (`status: failed`).
 
 ## 5. Testing
