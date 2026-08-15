@@ -27,3 +27,7 @@ drizzle/**/*.sql.bak
 # SDD / port scratch (agents)
 .superpowers/
 
+
+# review screenshots (throwaway)
+*.png
+.playwright-mcp/
