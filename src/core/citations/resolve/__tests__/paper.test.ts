@@ -41,4 +41,21 @@ describe("resolvePaper", () => {
       getWorkByDoi: vi.fn().mockResolvedValue(null),
     })).toBeNull();
   });
+
+  it("returns null when dependency rejects", async () => {
+    const getWorkByDoi = vi.fn().mockResolvedValue(null);
+    const s2GetPaper = vi.fn().mockResolvedValue({ title: "Old Paper", year: 1990, doi: null, abstract: null });
+    const searchWorks = vi.fn().mockRejectedValue(new Error("network"));
+    await expect(
+      resolvePaper("arXiv:hep-th/9901001", {}, {
+        getWorkByDoi, s2GetPaper, searchWorks,
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it("resolves raw numeric arXiv id via minted DOI", async () => {
+    const getWorkByDoi = vi.fn().mockResolvedValue(fw("W10"));
+    expect(await resolvePaper("2101.00001", {}, { getWorkByDoi })).toBe("W10");
+    expect(getWorkByDoi).toHaveBeenCalledWith("10.48550/arXiv.2101.00001", {});
+  });
 });
