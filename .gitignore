@@ -31,3 +31,6 @@ drizzle/**/*.sql.bak
 # review screenshots (throwaway)
 *.png
 .playwright-mcp/
+.vercel
+.env*
+!docs/assets/*.png
