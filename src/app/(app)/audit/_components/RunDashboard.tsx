@@ -25,8 +25,8 @@ const CitationGraph = dynamic(
     { ssr: false },
 );
 
-import { DriftPanel } from "./DriftPanel";
 import { Legend } from "./Legend";
+import { NodePanel } from "./NodePanel";
 import { PipelineBar } from "./PipelineBar";
 import { VerdictCard } from "./VerdictCard";
 
@@ -96,6 +96,7 @@ export function RunDashboard({
                             key={revealKey}
                             view={view}
                             onNodeClick={setSelected}
+                            selectedId={selected}
                             insetRight={state && selected ? 360 : 0}
                         />
                         <button
@@ -112,7 +113,7 @@ export function RunDashboard({
                     </div>
                 )}
                 {state && selected && (
-                    <DriftPanel
+                    <NodePanel
                         state={state}
                         selectedId={selected}
                         onClose={() => setSelected(null)}

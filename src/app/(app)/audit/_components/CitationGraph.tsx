@@ -48,10 +48,13 @@ const NodeProgram = createNodeBorderProgram({
 export function CitationGraph({
     view,
     onNodeClick,
+    selectedId = null,
     insetRight = 0,
 }: {
     view: GraphView;
-    onNodeClick?: (id: string) => void;
+    onNodeClick?: (id: string | null) => void;
+    /** Node the inspector is open on; drawn with a halo. */
+    selectedId?: string | null;
     /** Pixels of the pane covered by an overlay, so the graph keeps clear
      * of it: Sigma refits when its container resizes. */
     insetRight?: number;
@@ -60,6 +63,9 @@ export function CitationGraph({
     const rendererRef = useRef<Sigma | null>(null);
     const clickRef = useRef(onNodeClick);
     clickRef.current = onNodeClick;
+    // Read inside the reducers, which are created once with the renderer.
+    const selectedRef = useRef(selectedId);
+    selectedRef.current = selectedId;
 
     const graph = useMemo(() => {
         const g = new Graph({ multi: false, type: "directed" });
@@ -165,6 +171,16 @@ export function CitationGraph({
                 if (((data.depth as number) ?? 0) > revealedDepth) {
                     return { ...data, hidden: true };
                 }
+                const selected = node === selectedRef.current;
+                if (selected) {
+                    return {
+                        ...data,
+                        size: data.size * 1.6,
+                        label: (data.title as string) ?? data.label,
+                        borderColor: CANVAS_INK,
+                        zIndex: 2,
+                    };
+                }
                 if (!hovered) return data;
                 if (node === hovered || neighbours.has(node)) {
                     return { ...data, zIndex: 1 };
@@ -204,6 +220,8 @@ export function CitationGraph({
             renderer.refresh({ skipIndexation: true });
         });
         renderer.on("clickNode", ({ node }) => clickRef.current?.(node));
+        // Clicking empty canvas dismisses the inspector.
+        renderer.on("clickStage", () => clickRef.current?.(null));
         rendererRef.current = renderer;
 
         let timer: number | undefined;
