@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { deriveGraphView } from "@/core/run/client/graph-view";
+import { useEffect, useMemo, useState } from "react";
+import {
+    deriveGraphView,
+    worstDriftOrigin,
+} from "@/core/run/client/graph-view";
 import {
     AGENT_ORDER,
     type AgentStatus,
@@ -17,6 +20,9 @@ import { VerdictCard } from "./VerdictCard";
 
 export type DashboardMode = "live" | "replay";
 
+const NODE_CASCADE_STEP_MS = 220;
+const NODE_REVEAL_DURATION_MS = 420;
+
 export function RunDashboard({
     state,
     live,
@@ -27,6 +33,7 @@ export function RunDashboard({
     mode: DashboardMode;
 }) {
     const [selected, setSelected] = useState<string | null>(null);
+    const [revealKey, setRevealKey] = useState(0);
     const displayAgents =
         live?.agents ??
         (Object.fromEntries(
@@ -38,11 +45,44 @@ export function RunDashboard({
         [state],
     );
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: revealKey deliberately restarts this sequence on Replay.
+    useEffect(() => {
+        setSelected(null);
+        if (!state) return;
+
+        const origin = worstDriftOrigin(state);
+        if (!origin) return;
+
+        const maxDepth = state.graph.nodes.reduce(
+            (deepest, node) => Math.max(deepest, node.depth),
+            0,
+        );
+        const timer = window.setTimeout(
+            () => setSelected(origin),
+            maxDepth * NODE_CASCADE_STEP_MS + NODE_REVEAL_DURATION_MS,
+        );
+
+        return () => window.clearTimeout(timer);
+    }, [revealKey, state]);
+
     return (
         <div className="grid h-[calc(100svh-3.5rem)] grid-cols-[1fr_360px]">
             <section className="relative border-r">
                 {view ? (
-                    <CitationGraph view={view} onNodeClick={setSelected} />
+                    <>
+                        <CitationGraph
+                            key={revealKey}
+                            view={view}
+                            onNodeClick={setSelected}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setRevealKey((key) => key + 1)}
+                            className="absolute top-3 left-3 z-10 rounded border border-[#D0D7DE] bg-white/90 px-2 py-1 text-xs text-[#57606A] shadow-sm hover:bg-[#F6F8FA]"
+                        >
+                            Replay
+                        </button>
+                    </>
                 ) : (
                     <div className="flex h-full items-center justify-center text-[#57606A]">
                         Enter a claim to begin.
