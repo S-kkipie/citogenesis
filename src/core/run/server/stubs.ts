@@ -40,13 +40,13 @@ export const traceChainStub: TraceChain = async (
     const graph = {
         nodes: [
             {
-                id: "W0" as const,
+                id: "W0",
                 title: "Stub anchor work",
                 year: 2024,
                 doi: null,
                 type: "article",
                 venue: null,
-                authors: [] as string[],
+                authors: [],
                 abstract: null,
                 citedByCount: 0,
                 isRetracted: false,
@@ -56,10 +56,14 @@ export const traceChainStub: TraceChain = async (
                 fetchStatus: "resolved" as const,
             },
         ],
-        edges: [] as { from: string; to: string }[],
+        edges: [],
         truncated: false,
     };
-    emitDelta?.({ type: "graph-delta", nodes: graph.nodes, edges: graph.edges });
+    emitDelta?.({
+        type: "graph-delta",
+        nodes: graph.nodes,
+        edges: graph.edges,
+    });
     return { graph, cycles: [], errors: [] };
 };
 
@@ -89,11 +93,7 @@ export const judgePrimacyStub: JudgePrimacy = async (
     return { nodes, originCandidates, errors: [] };
 };
 
-export const auditDriftStub: AuditDrift = async (
-    _claim,
-    origins,
-    emit,
-) => {
+export const auditDriftStub: AuditDrift = async (_claim, origins, emit) => {
     emit({
         agent: "drift-auditor",
         phase: "done",

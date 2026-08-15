@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deltaEventSchema } from "../delta";
 import { runSseEventSchema } from "../api";
+import { deltaEventSchema } from "../delta";
 
 const node = {
     id: "W1",

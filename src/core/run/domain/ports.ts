@@ -10,9 +10,9 @@
  * done so the audit log and the SSE stream stay live. Throw only on
  * unrecoverable failures; recoverable ones are reported via RunError.
  */
+import type { DeltaEmit } from "./delta";
 import type { CitationGraph, CitationNode, TraceBudget, WorkId } from "./graph";
 import type { DriftFinding, RunError, RunInput, Verdict } from "./state";
-import type { DeltaEmit } from "./delta";
 import type { TraceEmit } from "./trace";
 
 /** Door A/B/C → normalized claim + BFS roots. */
