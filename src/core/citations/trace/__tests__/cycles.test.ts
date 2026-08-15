@@ -20,12 +20,11 @@ describe("findCycles", () => {
   });
 
   it("returns deterministic SCC order regardless of node/edge order", () => {
-    const canonical = [["A", "B", "C"]] as const;
-    expect(
-      findCycles(
-        g(["C", "A", "B"], [["B", "A"], ["C", "A"], ["A", "B"], ["B", "C"]]),
-      ),
-    ).toEqual(canonical);
+    const graph1 = g(["A", "B", "C"], [["A", "B"], ["B", "C"], ["C", "A"]]);
+    const graph2 = g(["C", "A", "B"], [["C", "A"], ["A", "B"], ["B", "C"]]);
+
+    expect(findCycles(graph2)).toEqual(findCycles(graph1));
+    expect(findCycles(graph1)).toEqual([["A", "B", "C"]]);
   });
 
   it("returns no cycles for a DAG", () => {
