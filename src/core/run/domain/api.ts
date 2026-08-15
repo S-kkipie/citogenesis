@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deltaEventOptions } from "./delta";
 import { runStateSchema, verdictSchema } from "./state";
 import { isoInstant, traceEventSchema } from "./trace";
 
@@ -22,6 +23,7 @@ export const runSseEventSchema = z.discriminatedUnion("type", [
         runId: z.string(),
         message: z.string(),
     }),
+    ...deltaEventOptions,
 ]);
 export type RunSseEvent = z.infer<typeof runSseEventSchema>;
 

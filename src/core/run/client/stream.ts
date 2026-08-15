@@ -86,5 +86,10 @@ export function streamReducer(view: LiveView, event: RunSseEvent): LiveView {
                 failureMessage: event.message,
                 runId: event.runId,
             };
+        default:
+            // Delta events (claim-resolved, graph-delta, etc.) are ephemeral.
+            // They don't update the persistent view state; the UI consumes them
+            // directly for live animation. Return the view unchanged.
+            return view;
     }
 }
