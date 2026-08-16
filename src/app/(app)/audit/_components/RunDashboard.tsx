@@ -12,6 +12,7 @@ import {
     type LiveView,
 } from "@/core/run/client/stream";
 import type { AgentName, RunState } from "@/core/run/domain";
+import { useIsMobile } from "@/frontend/hooks/use-mobile";
 import "../audit.css";
 import dynamic from "next/dynamic";
 
@@ -42,6 +43,9 @@ export function RunDashboard({
 }) {
     const [selected, setSelected] = useState<string | null>(null);
     const [revealKey, setRevealKey] = useState(0);
+    // The inspector covers the whole canvas on mobile, so squeezing the
+    // graph out of its way would only shrink it to nothing.
+    const isMobile = useIsMobile();
 
     const displayAgents: Record<AgentName, AgentStatus> =
         live?.agents ??
@@ -92,7 +96,7 @@ export function RunDashboard({
     }, [revealKey, state, finished, cascade]);
 
     return (
-        <div className="audit-scope grid h-[calc(100svh-3.5rem)] grid-cols-[320px_1fr] bg-[var(--au-paper)] font-[family-name:var(--font-body)] text-[var(--au-ink)]">
+        <div className="audit-scope flex h-[calc(100svh-3.5rem)] flex-col bg-[var(--au-paper)] font-[family-name:var(--font-body)] text-[var(--au-ink)] md:grid md:grid-cols-[320px_1fr]">
             <OrchestraRail
                 agents={displayAgents}
                 trace={live?.trace ?? state?.trace ?? []}
@@ -109,7 +113,7 @@ export function RunDashboard({
                         : undefined
                 }
             />
-            <section className="relative border-[var(--au-rule)] border-l bg-[var(--au-canvas)]">
+            <section className="relative order-1 h-[55svh] flex-none border-[var(--au-rule)] border-b bg-[var(--au-canvas)] md:order-2 md:h-auto md:border-b-0 md:border-l">
                 {view ? (
                     <>
                         <CitationGraph
@@ -118,7 +122,9 @@ export function RunDashboard({
                             cascade={cascade}
                             onNodeClick={setSelected}
                             selectedId={selected}
-                            insetRight={state && selected ? 360 : 0}
+                            insetRight={
+                                state && selected && !isMobile ? 360 : 0
+                            }
                         />
                         <button
                             type="button"
@@ -128,12 +134,12 @@ export function RunDashboard({
                             Replay
                         </button>
                         {state?.claim && (
-                            <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-24">
-                                <div className="max-w-3xl rounded border border-[var(--au-canvas-rule)] bg-[var(--au-canvas)]/90 px-5 py-2 text-center shadow-sm">
+                            <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-16 md:px-24">
+                                <div className="max-w-3xl rounded border border-[var(--au-canvas-rule)] bg-[var(--au-canvas)]/90 px-3 py-1.5 text-center shadow-sm md:px-5 md:py-2">
                                     <p className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--au-canvas-ink)]/60 uppercase tracking-widest">
                                         auditing {state.input.kind}
                                     </p>
-                                    <p className="line-clamp-2 font-[family-name:var(--font-display)] font-semibold text-[var(--au-canvas-ink)] text-lg leading-snug">
+                                    <p className="line-clamp-2 font-[family-name:var(--font-display)] font-semibold text-[var(--au-canvas-ink)] text-sm leading-snug md:text-lg">
                                         “{state.claim}”
                                     </p>
                                 </div>

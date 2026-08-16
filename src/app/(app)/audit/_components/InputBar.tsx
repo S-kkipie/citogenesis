@@ -83,7 +83,7 @@ export function InputBar({
 
     return (
         <div className="audit-scope border-[var(--au-rule)] border-b bg-[var(--au-paper-2)] px-6 py-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
                 <select
                     value={door}
                     onChange={(e) => handleDoorChange(e.target.value as Door)}
@@ -104,13 +104,13 @@ export function InputBar({
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && input) handleRun();
                     }}
-                    className="flex-1 rounded border border-[var(--au-rule)] bg-[var(--au-paper)] px-2 py-1.5 text-[var(--au-ink)] text-sm placeholder:text-[var(--au-neutral)]"
+                    className="min-w-0 flex-1 rounded border border-[var(--au-rule)] bg-[var(--au-paper)] px-2 py-1.5 text-[var(--au-ink)] text-sm placeholder:text-[var(--au-neutral)]"
                 />
                 <button
                     type="button"
                     onClick={() => setText(EXAMPLE[door])}
                     disabled={disabled}
-                    className="rounded border border-[var(--au-rule)] px-2 py-1.5 text-[var(--au-neutral)] text-xs hover:bg-[var(--au-paper)] disabled:opacity-40"
+                    className="hidden rounded border border-[var(--au-rule)] px-2 py-1.5 text-[var(--au-neutral)] text-xs hover:bg-[var(--au-paper)] disabled:opacity-40 sm:block"
                 >
                     example
                 </button>

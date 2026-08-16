@@ -1,7 +1,7 @@
 export function Legend() {
     return (
         /* left-16 clears React Flow's zoom controls, which sit bottom-left. */
-        <div className="absolute bottom-3 left-16 rounded border border-[var(--au-canvas-rule)] bg-[var(--au-canvas)]/90 p-2 text-[10px] text-[var(--au-canvas-ink)] leading-tight shadow-sm">
+        <div className="absolute bottom-3 left-16 hidden rounded border border-[var(--au-canvas-rule)] bg-[var(--au-canvas)]/90 p-2 text-[10px] text-[var(--au-canvas-ink)] leading-tight shadow-sm md:block">
             <p>
                 <span className="text-[#CF222E]">●</span> flagged &nbsp;
                 <span className="text-[#9A6700]">●</span> caution &nbsp;

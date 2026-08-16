@@ -69,7 +69,7 @@ export function NodePanel({
     const unresolved = node.fetchStatus === "unresolved";
 
     return (
-        <aside className="absolute inset-y-0 right-0 z-10 w-[360px] overflow-y-auto border-[var(--au-rule)] border-l bg-[var(--au-paper-2)] p-4 text-[var(--au-ink)] shadow-lg">
+        <aside className="absolute inset-y-0 right-0 z-10 w-full overflow-y-auto border-[var(--au-rule)] border-l bg-[var(--au-paper-2)] p-4 text-[var(--au-ink)] shadow-lg md:w-[360px]">
             <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-wrap gap-1">
                     {isOrigin && (
