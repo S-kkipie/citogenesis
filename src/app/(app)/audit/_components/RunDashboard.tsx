@@ -75,10 +75,11 @@ export function RunDashboard({
 
     // Auto-open the worst drifted origin — but only once the run is over.
     // Mid-run the state changes on every delta; touching the selection then
-    // would fight the user's own clicks.
+    // would fight the user's own clicks. On mobile the inspector covers the
+    // whole canvas, so auto-opening it would hide the graph entirely.
     // biome-ignore lint/correctness/useExhaustiveDependencies: revealKey deliberately restarts this sequence on Replay.
     useEffect(() => {
-        if (!state || !finished) return;
+        if (!state || !finished || isMobile) return;
 
         const origin = worstDriftOrigin(state);
         if (!origin) return;
@@ -93,7 +94,7 @@ export function RunDashboard({
         const timer = window.setTimeout(() => setSelected(origin), delay);
 
         return () => window.clearTimeout(timer);
-    }, [revealKey, state, finished, cascade]);
+    }, [revealKey, state, finished, cascade, isMobile]);
 
     return (
         <div className="audit-scope flex h-[calc(100svh-3.5rem)] flex-col bg-[var(--au-paper)] font-[family-name:var(--font-body)] text-[var(--au-ink)] md:grid md:grid-cols-[320px_1fr]">
