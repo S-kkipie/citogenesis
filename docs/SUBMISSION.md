@@ -12,12 +12,9 @@ Track: **Citation Verification**
 - **Sample result permalink:** https://citogenesis.aido.lat/runs/sample-run
 - **Tech tags:** LangGraph (allowed platform tag), TypeScript, Next.js, Gemini, OpenAlex, Postgres
 - **Team:** Adrian Issac (solo)
-- **Demo video (3 min):** ⚠️ PENDING — must be **YouTube (Unlisted) or
-  Loom** per the rules, "showing the agents working together on a real
-  input". Record `/audit` running a claim live (graph growing + agent
-  rail), then `/runs` history + a replay permalink. Suggested beats:
-  problem (xkcd citogenesis, 20s) → live run (90s) → verdict card + drift
-  evidence (30s) → history/dedupe + replay + a failure case (30s).
+- **Demo video (3 min):** https://youtu.be/BAna-9GELyg
+- **Submitted:** https://dorahacks.io/buidl/48008 (17 Aug 2026, before the
+  11:59 PM IST deadline)
 
 ## Confirmed rules (read off the DoraHacks page, 15 Aug)
 
