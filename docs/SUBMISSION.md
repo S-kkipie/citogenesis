@@ -7,9 +7,9 @@ Track: **Citation Verification**
 
 - **Name:** Citogenesis
 - **Tagline:** Trace every claim to its root. Catch the ones with no root.
-- **Live demo:** https://citogenesis.vercel.app/audit
+- **Live demo:** https://citogenesis.aido.lat/audit
 - **Repo:** https://github.com/S-kkipie/citogenesis (public)
-- **Sample result permalink:** https://citogenesis.vercel.app/runs/sample-run
+- **Sample result permalink:** https://citogenesis.aido.lat/runs/sample-run
 - **Tech tags:** LangGraph (allowed platform tag), TypeScript, Next.js, Gemini, OpenAlex, Postgres
 - **Team:** Adrian Issac (solo)
 - **Demo video (3 min):** ⚠️ PENDING — must be **YouTube (Unlisted) or
@@ -55,7 +55,7 @@ zero cost.
 
 A typical audit costs under $0.01 and takes about 90 seconds — turning a
 day of manual reference-chasing into a minute-long, auditable check for
-reviewers, editors, and journalists. Live at citogenesis.vercel.app.
+reviewers, editors, and journalists. Live at citogenesis.aido.lat.
 
 ## Reproducibility (for the form, condensed)
 

@@ -2,7 +2,7 @@
 
 **Trace every claim to its root. Catch the ones with no root.**
 
-**🔴 Live demo: https://citogenesis.vercel.app/audit**
+**🔴 Live demo: https://citogenesis.aido.lat/audit**
 
 A multi-agent AI system that audits the **citation provenance** of a scientific
 claim — following the trail of references backwards until it either hits real
@@ -125,5 +125,5 @@ pnpm dev                      # http://localhost:3000/audit
 
 ## Status
 
-✅ Built, tested, and deployed: https://citogenesis.vercel.app — run a
+✅ Built, tested, and deployed: https://citogenesis.aido.lat — run a
 claim on `/audit`, watch the agents work live, browse past runs on `/runs`.
